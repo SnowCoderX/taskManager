@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>lineDesign.qml</file>
+        <file>myProgressBarStyle.qml</file>
+        <file>rectangleGradient.qml</file>
+    </qresource>
+</RCC>
