@@ -79,7 +79,7 @@ Window {
                         Item { Layout.fillWidth: true } //spacer
                         Button {
                             text: "+1"
-                            onClicked: taskManager.addTask(1)
+                            onClicked: tasksModel.addNumericTask(1)
                             Layout.preferredWidth: 40
                             Layout.alignment: Qt.AlignRight
                             style: ButtonStyle {
@@ -98,7 +98,7 @@ Window {
                         }
                         Button {
                             text: "+10"
-                            onClicked: taskManager.addTask(10)
+                            onClicked: tasksModel.addNumericTask(10)
                             Layout.preferredWidth: 40
                             Layout.alignment: Qt.AlignRight
                             style: ButtonStyle {
@@ -117,7 +117,7 @@ Window {
                         }
                         Button {
                             text: "+50"
-                            onClicked: taskManager.addTask(50)
+                            onClicked: tasksModel.addNumericTask(50)
                             Layout.preferredWidth: 40
                             Layout.alignment: Qt.AlignRight
                             style: ButtonStyle {
@@ -136,8 +136,7 @@ Window {
                         }
                         Button {
                             text: "+200"
-                            // onClicked: taskManager.addInThreadTasks(200) //параллельное
-                            onClicked: taskManager.addTask(200)
+                            onClicked: tasksModel.addNumericTask(200)
                             Layout.preferredWidth: 40
                             Layout.alignment: Qt.AlignRight
                             style: ButtonStyle {
@@ -201,7 +200,7 @@ Window {
                                         }
                                         Button {
                                             text: "X"
-                                            onClicked: taskManager.deleteTask(taskId)
+                                            onClicked: tasksModel.deleteTask(taskId)
                                             Layout.preferredWidth: 25
                                             Layout.alignment: Qt.AlignRight
                                             style: ButtonStyle {
@@ -380,10 +379,9 @@ Window {
                         RowLayout {
                             Text {text: "Задачи    ";color: textColor}
                         }
-                        Text { text: "Всего: " + taskManager.totalTasks; color: textColor }
-                        Text { text: "Ожидают: " + taskManager.waitingTasks; color: textColor }
-                        Text { text: "В работе: " + taskManager.inProgressTasks; color: textColor }
-                        // Text { text: "Выполнено: " + taskManager.completedTasks; color: textColor }
+                        Text { text: "Всего: " + tasksModel.totalTasks; color: textColor }
+                        Text { text: "Ожидают: " + tasksModel.waitingTasks; color: textColor }
+                        Text { text: "В работе: " + tasksModel.inProgressTasks; color: textColor }
                     }
 
                     Item { Layout.fillWidth: true } // Spacer

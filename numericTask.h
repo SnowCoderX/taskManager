@@ -61,7 +61,7 @@ public:
         return std::min(100 ,static_cast<int>((static_cast<double>(myProgress - m_start) / (myEnd - m_start) * 100)));
     }
 
-    std::string getStatus() const override
+    QString getStatus() const override
     {
         return status;
     }
@@ -93,7 +93,7 @@ private:
     void changeState(int state)
     {
         if (state == TaskState::Complete)   status = "Завершена";
-        else if (state == TaskState::Active)status = "Выполняет исполнитель №" + getWorkerId();
+        else if (state == TaskState::Active)status = "Выполняет исполнитель №" + QString::fromStdString(getWorkerId()); //TODO переделать потом так как тут просто лишнее это перемещение из string в QString и просто надо сделать QString
         else if (state == TaskState::Wait)  status = "Ожидает";
         emit statusChanged();
     }
@@ -108,7 +108,7 @@ private:
     T myEnd;
     T myProgress;
     T myIncrement;
-    std::string status;
+    QString status;
 };
 
 #endif // NUMERICTASK_H

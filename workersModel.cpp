@@ -10,6 +10,10 @@ WorkersModel::WorkersModel(QObject* parent)
 
 void WorkersModel::addWorker(std::unique_ptr<Worker> worker)
 {
+    //TODO многопоточка
+    // threadWorkerModel = new QThread();
+    // moveToThread(threadWorkerModel);
+
     connect(worker.get(), &Worker::taskFinished, this, [this](int workerId) {
         updateWorker(workerId);
     });
@@ -65,11 +69,11 @@ Worker* WorkersModel::searchWorkerByTaskId(int taskId)
     return nullptr;
 }
 
-int WorkersModel::countWorkersByStatus(const std::string &status) const
+int WorkersModel::countWorkersByStatus(const QString &status) const
 {
     std::lock_guard<std::mutex> lock(mutexWorkers);
     return std::count_if(workers.begin(), workers.end(), [&](const auto& worker) {
-        return worker->getStatus().find(status) != std::string::npos;
+        return worker->getStatus().contains(status);
     });
 }
 
@@ -94,7 +98,7 @@ QVariant WorkersModel::data(const QModelIndex &index, int role) const
     const auto& worker = workers[index.row()];
     switch (role) {
     case IdRole:        return worker->getId();                             break;
-    case StatusRole:    return QString::fromStdString(worker->getStatus()); break;
+    case StatusRole:    return worker->getStatus(); break;
     }
 }
 

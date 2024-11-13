@@ -18,7 +18,7 @@ void Worker::assignTask(ITask* task)
     this->task = task;
     taskId = task->getId();
     running = true;
-    status = "Выполняет задачу №" + std::to_string(task->getId());
+    status = "Выполняет задачу №" +  QString::number(task->getId());
     emit changeStatus(workerId);
     taskCondition.notify_one();
 }
@@ -28,7 +28,7 @@ bool Worker::isRun() const
     return running;
 }
 
-std::string Worker::getStatus() const
+QString Worker::getStatus() const
 {
     return status;
 }
@@ -80,8 +80,8 @@ void Worker::run()
 
         running = false;
         QThread::sleep(5);
-        ITask* taskBuf = dynamic_cast<ITask*>(task);
-        status = "Ожидает";
+        ITask* taskBuf = task;
+        status = QString("Ожидает");
         task = nullptr;
         emit taskFinished(workerId);
         //TODO тут надо засинхронить это и TasksModel::deleteTask(int taskId) чтоб можно

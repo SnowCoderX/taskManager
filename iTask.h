@@ -32,7 +32,7 @@ public:
     virtual int getProgress() const = 0;
     virtual int getId() const                   { return taskId; }
     virtual std::string getWorkerId()           { return workerId == 0 ? "Ошибка" : std::to_string(workerId); }
-    virtual std::string getStatus() const = 0;
+    virtual QString getStatus() const = 0;
     virtual std::string getType() const = 0;
 
 signals:

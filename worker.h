@@ -16,7 +16,7 @@ public:
 
     void assignTask(ITask* task);
     bool isRun() const;
-    std::string getStatus() const;
+    QString getStatus() const;
     int getId() const;
     int getTaskId() const;
     void stop();
@@ -34,7 +34,7 @@ private:
     ITask* task = nullptr;
     int workerId;
     std::atomic<bool> running;
-    std::string status;
+    QString status;
     static std::atomic<int> countWorkers;
     std::mutex taskMutex;
     std::condition_variable taskCondition;

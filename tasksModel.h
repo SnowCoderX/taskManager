@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <mutex>
+#include <random>
 
 #include <QAbstractListModel>
 
@@ -24,15 +25,19 @@ public:
         TypeRole
     };
 
-
     void addTask(std::unique_ptr<ITask> task);
-    void deleteTask(int taskId);
     ITask* getFreeTask();
-    ITask* getTaskByTaskId (int taskId);   //TODO возможно не пригодится
-    int getCountTasksByStatus(const std::string& status) const;
-    int getCountTasksAll() const;
-    int getCountCompleteTasks() const;
-    std::vector<ITask*> getAllTasks() const;
+    int getCountTasksByStatus(const QString& status) const;
+
+    Q_PROPERTY(int totalTasks READ getCountTasksAll NOTIFY tasksChanged)
+    Q_PROPERTY(int waitingTasks READ getCountWaitingTasks NOTIFY tasksChanged)
+    Q_PROPERTY(int inProgressTasks READ getCountInProgressTasks NOTIFY tasksChanged)
+
+    Q_INVOKABLE void addNumericTask(short count);
+    Q_INVOKABLE void deleteTask(int taskId);
+    Q_INVOKABLE int getCountTasksAll() const;
+    Q_INVOKABLE int getCountWaitingTasks();
+    Q_INVOKABLE int getCountInProgressTasks();
 
     Q_INVOKABLE void updateTask(int taskId);
     Q_INVOKABLE void sortTasksByStatus();
@@ -48,9 +53,12 @@ protected:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 
 private:
-    std::atomic<int> countCompleteTasks = 0;
+    QThread* threadTaskModel;
     std::vector<std::unique_ptr<ITask>> tasks;
     mutable std::mutex mutexTasks;
+
+    template <typename T>
+    void addRandomNumericTask(std::mt19937 &gen);
 };
 
 #endif // TASKSMODEL_H

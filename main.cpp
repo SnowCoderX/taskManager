@@ -4,7 +4,7 @@
 #include <QQmlApplicationEngine>
 #include <QSettings>
 #include <QQmlContext>
-// #include <QTimer>
+#include <QTimer>
 
 #include "taskManager.h"
 
@@ -43,16 +43,16 @@ int main(int argc, char *argv[])
     bool flagDarkTheme = settings.value("theme/darkMode", true).toBool();
     QCoreApplication::instance()->thread()->setPriority(QThread::HighPriority);
 
-    TaskManager* taskManager = new TaskManager();
+    TaskManager taskManager;
 
     QQmlApplicationEngine engine;
-    engine.rootContext()->setContextProperty("tasksModel", taskManager->getTasksModel());
-    engine.rootContext()->setContextProperty("workersModel", taskManager->getWorkersModel());
-    engine.rootContext()->setContextProperty("taskManager", taskManager);
+    engine.rootContext()->setContextProperty("tasksModel", taskManager.getTasksModel());
+    engine.rootContext()->setContextProperty("workersModel", taskManager.getWorkersModel());
+    engine.rootContext()->setContextProperty("taskManager", &taskManager);
     engine.rootContext()->setContextProperty("flagDarkTheme", flagDarkTheme);
-    engine.rootContext()->setContextProperty("startValueOverallProgress", taskManager->getTasksModel()->getOverallProgress());
+    engine.rootContext()->setContextProperty("startValueOverallProgress", taskManager.getTasksModel()->getOverallProgress());
 
-    QObject::connect(taskManager->getTasksModel(), &TasksModel::progressChanged, &engine, [&](int overallProgress) {
+    QObject::connect(taskManager.getTasksModel(), &TasksModel::progressChanged, &engine, [&](int overallProgress) {
         engine.rootObjects().first()->setProperty("overallProgress", overallProgress);
     });
 
@@ -70,56 +70,56 @@ int main(int argc, char *argv[])
     bool flagRecoveryTasks = true;
     bool flagRecoveryWorkers = true;
 
-    for (int i = 1; i < argc; ++i) {
-        QString arg = argv[i];
+    // for (int i = 1; i < argc; ++i) {
+    //     QString arg = argv[i];
 
-        if (arg == "-h" || arg == "-help" || arg == "--h" || arg == "--help") {
-            printHelp();
-            return 0;
-        }
+    //     if (arg == "-h" || arg == "-help" || arg == "--h" || arg == "--help") {
+    //         printHelp();
+    //         return 0;
+    //     }
 
-        if (arg == "-t" && (i + 1) < argc) {
-            bool ok;
-            int taskCount = QString(argv[i + 1]).toInt(&ok);
-            if (ok)
-                taskManager->addTask(taskCount);
-        }
+    //     if (arg == "-t" && (i + 1) < argc) {
+    //         bool ok;
+    //         int taskCount = QString(argv[i + 1]).toInt(&ok);
+    //         if (ok)
+    //             taskManager.addTask(taskCount);
+    //     }
 
-        if (arg == "-w" && (i + 1) < argc) {
-            bool ok;
-            int workersCount = QString(argv[i + 1]).toInt(&ok);
-            if (ok)
-                taskManager->addWorkers(workersCount);
-        }
+    //     if (arg == "-w" && (i + 1) < argc) {
+    //         bool ok;
+    //         int workersCount = QString(argv[i + 1]).toInt(&ok);
+    //         if (ok)
+    //             taskManager.addWorkers(workersCount);
+    //     }
 
-        if (arg == "-rt" && (i + 1) < argc) {
-            bool ok;
-            int recovery = QString(argv[i + 1]).toInt(&ok);
-            if (ok)
-                if (!recovery)
-                    flagRecoveryTasks = false;
-                else
-                    std::cout << "Ошибка: Неверный формат аргумента -rt\n";
+    //     if (arg == "-rt" && (i + 1) < argc) {
+    //         bool ok;
+    //         int recovery = QString(argv[i + 1]).toInt(&ok);
+    //         if (ok)
+    //             if (!recovery)
+    //                 flagRecoveryTasks = false;
+    //             else
+    //                 std::cout << "Ошибка: Неверный формат аргумента -rt\n";
 
-        }
+    //     }
 
-        if (arg == "-rw" && (i + 1) < argc) {
-            bool ok;
-            int recovery = QString(argv[i + 1]).toInt(&ok);
-            if (ok)
-                if (!recovery)
-                    flagRecoveryWorkers = false;
-                else
-                    std::cout << "Ошибка: Неверный формат аргумента -rw\n";
-        }
-    }
+    //     if (arg == "-rw" && (i + 1) < argc) {
+    //         bool ok;
+    //         int recovery = QString(argv[i + 1]).toInt(&ok);
+    //         if (ok)
+    //             if (!recovery)
+    //                 flagRecoveryWorkers = false;
+    //             else
+    //                 std::cout << "Ошибка: Неверный формат аргумента -rw\n";
+    //     }
+    // }
     //// ↑↑↑ аргументы запуска и восстановление ↑↑↑ ////
 
     if (flagRecoveryTasks)
-        taskManager->loadTasks();
+        taskManager.loadTasks();
 
     if (flagRecoveryWorkers)
-        taskManager->loadWorkers();
+        taskManager.loadWorkers();
 
     QTimer autoSaveTimer;
     QObject::connect(&autoSaveTimer, &QTimer::timeout, [&]() {
@@ -128,8 +128,8 @@ int main(int argc, char *argv[])
         settings.setValue("window/posX", rootObject->property("x"));
         settings.setValue("window/posY", rootObject->property("y"));
         settings.setValue("theme/darkMode", rootObject->property("isDarkTheme").toBool());
-        taskManager->safeTasks();
-        taskManager->safeWorkers();
+        taskManager.safeTasks();
+        taskManager.safeWorkers();
     });
     autoSaveTimer.start(5000); //TODO если будет еще время, то переделай на сохранение после завершения фукнций вставки тасок и воркеров
 
@@ -140,9 +140,9 @@ int main(int argc, char *argv[])
         settings.setValue("window/posY", rootObject->property("y"));
         settings.setValue("theme/darkMode", rootObject->property("isDarkTheme").toBool());
 
-        taskManager->safeTasks();
-        taskManager->safeWorkers();
-        taskManager->stopAllWorkers();
+        taskManager.safeTasks();
+        taskManager.safeWorkers();
+        taskManager.stopAllWorkers();
     });
 
     return app.exec();

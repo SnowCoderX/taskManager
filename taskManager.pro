@@ -2,7 +2,7 @@ QT += core gui quick concurrent
 CONFIG += c++17
 
 SOURCES += \
-    addDelThread.cpp \
+    #addDelThread.cpp \
     dispatchThread.cpp \
     main.cpp \
     iTask.cpp \
@@ -12,7 +12,7 @@ SOURCES += \
     workersModel.cpp
 
 HEADERS += \
-    addDelThread.h \
+    #addDelThread.h \
     dispatchThread.h \
     iSerializableTask.h \
     #TaskFactory.h \

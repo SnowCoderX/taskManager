@@ -9,15 +9,12 @@
 
 #include "workersModel.h"
 #include "tasksModel.h"
-#include "numericTask.h"
 
 class DispatchThread;
-class AddDelThread;
 
 class TaskManager : public QObject
 {
     Q_OBJECT
-    friend AddDelThread;
     friend DispatchThread;
 
 public:
@@ -36,8 +33,6 @@ public:
     void clearBackupWorkers();
 
     Q_INVOKABLE static QString recommendedCountWorkers();
-    Q_INVOKABLE void addTask(short count, short type = TaskType::NumericRandom);
-    Q_INVOKABLE void addInThreadTasks(short count);
     Q_INVOKABLE void deleteTask(short taskId);
     Q_INVOKABLE void addWorkers(short count);
     Q_INVOKABLE void stopAllWorkers();
@@ -50,17 +45,6 @@ public:
     int getWaitingWorkers() const;
     int getBusyWorkers() const;
 
-    //Статистика задач
-    Q_PROPERTY(int totalTasks READ getTotalTasks NOTIFY tasksChanged)
-    Q_PROPERTY(int waitingTasks READ getWaitingTasks NOTIFY tasksChanged)
-    Q_PROPERTY(int inProgressTasks READ getInProgressTasks NOTIFY tasksChanged)
-    Q_PROPERTY(int completedTasks READ getCountCompleteTasks NOTIFY tasksChanged)
-    int getTotalTasks() const;
-    int getWaitingTasks() const;
-    int getInProgressTasks() const;
-    int getCountCompleteTasks() const;
-
-
 signals:
     void tasksChanged();
     void workersChanged();
@@ -72,81 +56,6 @@ private:
     mutable std::mutex workersMutex;
     std::condition_variable dispetchCondition;
     DispatchThread* dispatchThread = nullptr;
-    AddDelThread* addDelThread = nullptr;
-
     bool flagCloseApp = false;
-
-    // void dispatchTasks();
-    void addRandomTask();
-
-    template <typename T>
-    void addNumericTask(std::mt19937 &gen);
 };
-
-//-------------------------------------------------------------------------------//
-
-template <typename T>
-std::unique_ptr<ITask> createTask(QJsonObject &taskObj)
-{
-    if (typeid(T) == typeid(char)) {
-        char m_start = static_cast<char>(taskObj["start"].toString().toStdString().c_str()[0]);
-        char myEnd = static_cast<char>(taskObj["end"].toString().toStdString().c_str()[0]);
-        char myIncrement = static_cast<char>(taskObj["increment"].toString().toStdString().c_str()[0]);
-        auto task = std::make_unique<NumericTask<char>>(m_start, myEnd, myIncrement);
-        return task;
-    }
-
-    if (typeid(T) == typeid(uchar)) {
-        uchar m_start = static_cast<uchar>(taskObj["start"].toString().at(0).unicode());
-        uchar myEnd = static_cast<uchar>(taskObj["end"].toString().at(0).unicode());
-        uchar myIncrement = static_cast<uchar>(taskObj["increment"].toString().at(0).unicode());
-        auto task = std::make_unique<NumericTask<uchar>>(m_start, myEnd, myIncrement);
-        return task;
-    }
-
-    qint64 startBuf = taskObj["start"].toString().toLongLong();
-    qint64 endBuf = taskObj["end"].toString().toLongLong();
-    qint64 incrementBuf = taskObj["increment"].toString().toLongLong();
-
-    T m_start = static_cast<T>(startBuf);
-    T myEnd = static_cast<T>(endBuf);
-    T myIncrement = static_cast<T>(incrementBuf);
-
-    auto task = std::make_unique<NumericTask<T>>(m_start, myEnd, myIncrement);
-    return task;
-}
-
-template <typename T>
-void TaskManager::addNumericTask(std::mt19937 &gen)
-{
-    T max_range = std::numeric_limits<T>::max();
-    T min_range = std::numeric_limits<T>::lowest();
-
-    std::uniform_int_distribution<T> startDist(min_range / 2, max_range / 2);
-    T m_start = startDist(gen);
-
-    std::uniform_int_distribution<T> endDist(m_start + 100, max_range);
-    T myEnd = endDist(gen);
-
-    std::uniform_int_distribution<T> incrementDist(1, std::max<T>((myEnd - m_start) / 600, 1));
-    T myIncrement = incrementDist(gen);
-
-    int steps = (myEnd - m_start) / myIncrement;
-    while (steps < 100 || steps > 600) {
-        m_start = startDist(gen);
-        myEnd = endDist(gen);
-        myIncrement = incrementDist(gen);
-        steps = (myEnd - m_start) / myIncrement;
-    }
-
-    auto task = std::make_unique<NumericTask<T>>(m_start, myEnd, myIncrement, this);
-    int taskId = task->getId();
-    connect(task.get(), &ITask::taskFinished, [this]            {emit tasksChanged();} );
-    connect(task.get(), &ITask::taskFinished, [this, taskId]    {tasksModel->updateTask(taskId);});
-    connect(task.get(), &ITask::taskDelete, this, [this, taskId]{this->deleteTask(taskId);}, Qt::QueuedConnection);
-    connect(task.get(), &ITask::progressUpdated, [this, taskId] {tasksModel->updateTask(taskId);});
-    connect(task.get(), &ITask::statusChanged, [this]           {tasksModel->sortTasksByStatus();});
-
-    tasksModel->addTask(std::move(task));
-}
 #endif // TASKMANAGER_H

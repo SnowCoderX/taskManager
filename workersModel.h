@@ -26,7 +26,7 @@ public:
     Worker* getFreeWorker();
     std::vector<Worker*> getAllWorkers() const;
     Worker* searchWorkerByTaskId(int taskId);
-    int countWorkersByStatus(const std::string& status) const;
+    int countWorkersByStatus(const QString& status) const;
     int countWorkersAll() const;
 
 signals:
@@ -38,6 +38,7 @@ protected:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 
 private:
+    QThread* threadWorkerModel;
     std::vector<std::unique_ptr<Worker>> workers;
     mutable std::mutex mutexWorkers;
 };
