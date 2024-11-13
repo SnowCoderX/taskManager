@@ -9,22 +9,18 @@ void AddDelThread::run() {
 
         if (flagCloseApp) break;
 
-        // Добавляем задачи
         while (countAddTask > 0) {
-            auto task = createRandomTask<int>();  // Предполагается, что taskManager имеет метод createTask()
+            auto task = createRandomTask<int>();
             if (task) {
-                emit taskAdded(std::move(task));  // Уведомляем о добавлении новой задачи
+                emit taskAdded(std::move(task));
                 --countAddTask;
-            } else {
-                // Если создание задачи не удалось, выходим из цикла
+            } else
                 break;
-            }
         }
 
-        // Удаляем задачи по запросу
         for (int taskId : vecTaskDelete) {
-            // taskManager->removeTaskById(taskId);   // Предполагается, что TaskManager имеет метод removeTaskById
-            emit taskManager->tasksChanged();      // Уведомляем об изменении задач
+            // taskManager->removeTaskById(taskId);
+            emit taskManager->tasksChanged();
         }
         vecTaskDelete.clear();
     }
@@ -45,24 +41,24 @@ std::unique_ptr<ITask> AddDelThread::createRandomTask()
     T m_start = startDist(gen);
 
     std::uniform_int_distribution<T> endDist(m_start + 100, max_range);
-    T m_end = endDist(gen);
+    T myEnd = endDist(gen);
 
-    std::uniform_int_distribution<T> incrementDist(1, std::max<T>((m_end - m_start) / 600, 1));
-    T m_increment = incrementDist(gen);
+    std::uniform_int_distribution<T> incrementDist(1, std::max<T>((myEnd - m_start) / 600, 1));
+    T myIncrement = incrementDist(gen);
 
-    int steps = (m_end - m_start) / m_increment;
+    int steps = (myEnd - m_start) / myIncrement;
     while (steps < 100 || steps > 600) {
         m_start = startDist(gen);
-        m_end = endDist(gen);
-        m_increment = incrementDist(gen);
-        steps = (m_end - m_start) / m_increment;
+        myEnd = endDist(gen);
+        myIncrement = incrementDist(gen);
+        steps = (myEnd - m_start) / myIncrement;
     }
 
-    auto task = std::make_unique<NumericTask<T>>(m_start, m_end, m_increment, this);
+    auto task = std::make_unique<NumericTask<T>>(m_start, myEnd, myIncrement, this);
     int taskId = task->getId();
     connect(task.get(), &ITask::taskFinished, [this]            {emit taskManager->tasksChanged();} );
     connect(task.get(), &ITask::taskFinished, [this, taskId]    {taskManager->tasksModel->updateTask(taskId);});
-    connect(task.get(), &ITask::taskFinished, [this, taskId]    {taskManager->deleteTask(taskId);});
+    connect(task.get(), &ITask::deleteTask, [this, taskId]      {taskManager->deleteTask(taskId);});
     connect(task.get(), &ITask::progressUpdated, [this, taskId] {taskManager->tasksModel->updateTask(taskId);});
     connect(task.get(), &ITask::statusChanged, [this]           {taskManager->tasksModel->sortTasksByStatus();});
 

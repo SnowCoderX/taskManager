@@ -33,7 +33,6 @@ QString TaskManager::recommendedCountWorkers()  //static
 
 void TaskManager::addTask(short count, short type)
 {
-
     for (int i = 0; i < count; ++i) {
         if (getTotalTasks() >= 1000)
             return;
@@ -51,13 +50,11 @@ void TaskManager::addTask(short count, short type)
 void TaskManager::deleteTask(short taskId)
 {
     auto task = tasksModel->getTaskByTaskId(taskId);
-    if (task)
-        task->flagDelete = true;
     if (auto worker = workersModel->searchWorkerByTaskId(taskId))
         worker->stopTask();
 
-    //TODO удаление
-    std::lock_guard<std::mutex> lock(taskMutex);
+    //TODO тут из-за мьютекса лок интерфейса
+//    std::lock_guard<std::mutex> lock(taskMutex);
     tasksModel->deleteTask(taskId);
     // addDelThread->setDeleteTask(taskId);
     // tasksModel->updateTask(taskId);
@@ -106,7 +103,7 @@ void TaskManager::stopAllWorkers()
     for (auto& worker : workersModel->getAllWorkers())
         if (worker)
             worker->stop();
-    emit workersChanged();  //это чисто на обновление интерфейса, не тупи
+    emit workersChanged();
 }
 
 TasksModel *TaskManager::getTasksModel() const
@@ -123,7 +120,6 @@ void TaskManager::dispatchTasks()
 {
     std::unique_lock<std::mutex> lock(taskMutex);
     while (!flagCloseApp) {
-        // Ждем уведомления о новых задачах или освобождении воркеров
         dispatchThread->getCondition().wait(lock);
 
         if (flagCloseApp)
@@ -143,16 +139,36 @@ void TaskManager::dispatchTasks()
     }
 }
 
+void TaskManager::safeTasks()
+{
+    QJsonObject saveData;
+
+    QJsonArray tasksArray;
+    for (const auto &task : tasksModel->getAllTasks())
+        if (auto serializableTask = dynamic_cast<ISerializableTask*>(task))
+            if (!task->isCompleted())
+                tasksArray.append(serializableTask->serialize());
+
+    saveData["tasks"] = tasksArray;
+
+    QFile FileTasks("tasks_backup.json");
+    if (FileTasks.open(QIODevice::WriteOnly)) {
+        QJsonDocument saveDoc(saveData);
+        FileTasks.write(saveDoc.toJson());
+        FileTasks.close();
+    }
+}
+
 void TaskManager::loadTasks()
 {
-    QFile loadFile("tasks_backup.json");
+    QFile FileTasks("tasks_backup.json");
 
-    if (!loadFile.open(QIODevice::ReadOnly)) {
+    if (!FileTasks.open(QIODevice::ReadOnly)) {
         std::cout << "Не удалось открыть файл tasks_backup.json для загрузки задач" << std::endl;
         return;
     }
 
-    QByteArray data = loadFile.readAll();
+    QByteArray data = FileTasks.readAll();
     QJsonDocument loadDoc(QJsonDocument::fromJson(data));
     QJsonArray tasksArray = loadDoc.object()["tasks"].toArray();
 
@@ -172,71 +188,21 @@ void TaskManager::loadTasks()
             int taskId = task->getId();
             connect(task.get(), &ITask::taskFinished, [this]            {emit tasksChanged();} );
             connect(task.get(), &ITask::taskFinished, [this, taskId]    {tasksModel->updateTask(taskId);});
-            //TODO удаление
-            // connect(task.get(), &ITask::taskDelete, [this, taskId]      {this->deleteTask(taskId);});
+            connect(task.get(), &ITask::taskDelete, this, [this, taskId]{this->deleteTask(taskId);}, Qt::QueuedConnection);
             connect(task.get(), &ITask::progressUpdated, [this, taskId] {tasksModel->updateTask(taskId);});
             connect(task.get(), &ITask::statusChanged, [this]           {tasksModel->sortTasksByStatus();});
             tasksModel->addTask(std::move(task));
             emit tasksChanged();
         }
     }
-    loadFile.close();
+    FileTasks.close();
 }
 
-void TaskManager::safeTasks()
+void TaskManager::clearBackupTasks()
 {
-    QJsonObject saveData;
-
-    QJsonArray tasksArray;
-    for (const auto &task : tasksModel->getAllTasks())
-        if (auto serializableTask = dynamic_cast<ISerializableTask*>(task))
-            if (!task->isCompleted())
-                tasksArray.append(serializableTask->serialize());
-
-    saveData["tasks"] = tasksArray;
-
-    QFile saveFile("tasks_backup.json");
-    if (saveFile.open(QIODevice::WriteOnly)) {
-        QJsonDocument saveDoc(saveData);
-        saveFile.write(saveDoc.toJson());
-        saveFile.close();
-    }
-}
-
-void TaskManager::loadWorkers()
-{
-    QFile loadFile("workers_backup.json");
-
-    if (!loadFile.open(QIODevice::ReadOnly)) {
-        std::cout << "Не удалось открыть файл workers_backup.json для загрузки исполнителей" << std::endl;
-        return;
-    }
-
-    QByteArray data = loadFile.readAll();
-    QJsonDocument loadDoc(QJsonDocument::fromJson(data));
-    QJsonArray workersArray = loadDoc.object()["workers"].toArray();
-
-    for (const QJsonValue &value : workersArray) {
-        QJsonObject workerObj = value.toObject();
-
-        // Создаем воркера, возможно, с параметрами, если они есть
-        std::unique_ptr<Worker> worker = std::make_unique<Worker>();
-
-        connect(worker.get(), &Worker::taskFinished, this, [this](int workerId) {
-            workersModel->updateWorker(workerId);
-            dispatchThread->getCondition().notify_one();
-            emit workersChanged();
-        }, Qt::QueuedConnection);
-
-        std::lock_guard<std::mutex> lock(workersMutex);
-        if (worker) {
-            worker->start();
-            workersModel->addWorker(std::move(worker));
-            emit workersChanged();
-            dispatchThread->getCondition().notify_one();
-        }
-    }
-    loadFile.close();
+    QFile FileTasks("tasks_backup.json");
+    if (FileTasks.open(QIODevice::WriteOnly));
+        FileTasks.close();
 }
 
 void TaskManager::safeWorkers()
@@ -260,6 +226,49 @@ void TaskManager::safeWorkers()
         saveFile.close();
     }
 }
+
+void TaskManager::loadWorkers()
+{
+    QFile FileWorkers("workers_backup.json");
+
+    if (!FileWorkers.open(QIODevice::ReadOnly)) {
+        std::cout << "Не удалось открыть файл workers_backup.json для загрузки исполнителей" << std::endl;
+        return;
+    }
+
+    QByteArray data = FileWorkers.readAll();
+    QJsonDocument loadDoc(QJsonDocument::fromJson(data));
+    QJsonArray workersArray = loadDoc.object()["workers"].toArray();
+
+    for (const QJsonValue &value : workersArray) {
+        QJsonObject workerObj = value.toObject();
+
+        std::unique_ptr<Worker> worker = std::make_unique<Worker>();
+
+        connect(worker.get(), &Worker::taskFinished, this, [this](int workerId) {
+            workersModel->updateWorker(workerId);
+            dispatchThread->getCondition().notify_one();
+            emit workersChanged();
+        }, Qt::QueuedConnection);
+
+        std::lock_guard<std::mutex> lock(workersMutex);
+        if (worker) {
+            worker->start();
+            workersModel->addWorker(std::move(worker));
+            emit workersChanged();
+            dispatchThread->getCondition().notify_one();
+        }
+    }
+    FileWorkers.close();
+}
+
+void TaskManager::clearBackupWorkers()
+{
+    QFile FileWorkers("workers_backup.json");
+    if (FileWorkers.open(QIODevice::WriteOnly));
+    FileWorkers.close();
+}
+
 
 int TaskManager::getTotalWorkers() const
 {
@@ -285,21 +294,28 @@ int TaskManager::getBusyWorkers() const
 int TaskManager::getTotalTasks() const
 {
     if (tasksModel)
-        return tasksModel.get()->countTasksAll();
+        return tasksModel.get()->getCountTasksAll();
     return 0;
 }
 
 int TaskManager::getWaitingTasks() const
 {
     if (tasksModel)
-        return tasksModel.get()->countTasksByStatus("Ожидает");
+        return tasksModel.get()->getCountTasksByStatus("Ожидает");
     return 0;
 }
 
 int TaskManager::getInProgressTasks() const
 {
     if (tasksModel)
-        return tasksModel.get()->countTasksByStatus("Выполняет исполнитель №");
+        return tasksModel.get()->getCountTasksByStatus("Выполняет исполнитель №");
+    return 0;
+}
+
+int TaskManager::getCountCompleteTasks() const
+{
+    if (tasksModel)
+        return tasksModel.get()->getCountCompleteTasks();
     return 0;
 }
 

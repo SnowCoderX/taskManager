@@ -9,17 +9,21 @@
 
 TasksModel::TasksModel(QObject *parent) : QAbstractListModel(parent)
 {
-
+    QTimer *progressUpdateTimer = new QTimer(this);
+    connect(progressUpdateTimer, &QTimer::timeout, this, [=]() {
+        emit progressChanged(getOverallProgress());
+    });
+    progressUpdateTimer->start(500);    //для оптимизации, так как все равно анимация 1.6сек
 }
 
 void TasksModel::addTask(std::unique_ptr<ITask> task)
 {
-    std::lock_guard<std::mutex> lock(mutexTasks);
+//    std::lock_guard<std::mutex> lock(mutexTasks);
     beginInsertRows(QModelIndex(), tasks.size(), tasks.size());
     tasks.push_back(std::move(task));
     sortTasksByStatus();
-    emit tasksChanged();
-    emit progressChanged(getOverallProgress());
+   emit tasksChanged();
+//    emit progressChanged(getOverallProgress());
     endInsertRows();
 }
 
@@ -37,30 +41,42 @@ void TasksModel::deleteTask(int taskId)
         tasks.erase(it);
         endRemoveRows();
 
+        countCompleteTasks++;
         emit tasksChanged();
-        emit progressChanged(getOverallProgress());
+        // emit progressChanged(getOverallProgress());
     }
 }
 
 int TasksModel::getOverallProgress() const
 {
-    if (tasks.empty()) return 0;
+    if (tasks.empty()) return 100;
 
     int totalProgress = 0;
-    for (const auto& task : tasks)
-        totalProgress += task->getProgress();
+    for (const auto& task : tasks) {
+        std::lock_guard<std::mutex> lock(mutexTasks);
+        if (task != nullptr)
+            totalProgress += task->getProgress();
+    }
 
-    return std::min(100, static_cast<int>(totalProgress / tasks.size()));;
+    return std::min(100,
+                    static_cast<int>((totalProgress + countCompleteTasks * 100) / (tasks.size() + countCompleteTasks)));
+}
+
+int TasksModel::getCountCompleteTasks() const
+{
+    return countCompleteTasks;
 }
 
 void TasksModel::updateTask(int taskId)
 {
     for (int i = 0; i < tasks.size(); ++i) {
-        if (tasks[i]->getId() == taskId) {
-            emit dataChanged(index(i), index(i));
-            emit progressChanged(getOverallProgress());
-            emit tasksChanged();
-            break;
+        std::lock_guard<std::mutex> lock(mutexTasks);
+        if (tasks[i] != nullptr)
+            if (tasks[i]->getId() == taskId) {
+                emit dataChanged(index(i), index(i));
+                // emit progressChanged(getOverallProgress());
+                emit tasksChanged();
+                break;
         }
     }
 }
@@ -96,29 +112,38 @@ void TasksModel::sortTasksByStatus()
 
 ITask* TasksModel::getFreeTask()
 {
-    std::lock_guard<std::mutex> lock(mutexTasks);
-    for (const auto& task : tasks)
-        if (task->getStatus() == "Ожидает")
-            return task.get();
+    for (const auto& task : tasks){
+        std::lock_guard<std::mutex> lock(mutexTasks);
+        if (task != nullptr)
+            if (task->getStatus() == "Ожидает")
+                return task.get();
+    }
 
     return nullptr;
 }
 
 ITask* TasksModel::getTaskByTaskId (int taskId)
 {
-    std::lock_guard<std::mutex> lock(mutexTasks);
-    for (const auto& task : tasks)
-        if (task->getId() == taskId)
-            return task.get();
+    for (const auto& task : tasks){
+        std::lock_guard<std::mutex> lock(mutexTasks);
+        if (task != nullptr)
+            if (task->getId() == taskId)
+                return task.get();
+    }
 
     return nullptr;
 }
 
-int TasksModel::countTasksByStatus(const std::string &status) const
+int TasksModel::getCountTasksByStatus(const std::string &status) const
 {
     return std::count_if(tasks.begin(), tasks.end(), [&](const auto& task) {
         return task->getStatus().find(status) != std::string::npos;
     });
+}
+
+int TasksModel::getCountTasksAll() const
+{
+    return tasks.size();
 }
 
 std::vector<ITask*> TasksModel::getAllTasks() const

@@ -29,8 +29,9 @@ public:
     void deleteTask(int taskId);
     ITask* getFreeTask();
     ITask* getTaskByTaskId (int taskId);   //TODO возможно не пригодится
-    int countTasksByStatus(const std::string& status) const;
-    int countTasksAll() const { return tasks.size();}
+    int getCountTasksByStatus(const std::string& status) const;
+    int getCountTasksAll() const;
+    int getCountCompleteTasks() const;
     std::vector<ITask*> getAllTasks() const;
 
     Q_INVOKABLE void updateTask(int taskId);
@@ -47,8 +48,9 @@ protected:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 
 private:
+    std::atomic<int> countCompleteTasks = 0;
     std::vector<std::unique_ptr<ITask>> tasks;
-    std::mutex mutexTasks;
+    mutable std::mutex mutexTasks;
 };
 
 #endif // TASKSMODEL_H

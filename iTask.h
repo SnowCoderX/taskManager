@@ -25,7 +25,6 @@ public:
     explicit ITask(QObject *parent = nullptr) : QObject(parent), taskId(++countTasks) {}
     virtual ~ITask() = default;
 
-    std::atomic<bool> flagDelete = false;
     virtual void take(int workerId) = 0;
     virtual void executeStep() = 0;
     virtual void deleteTask() = 0;

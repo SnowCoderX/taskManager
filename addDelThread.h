@@ -21,7 +21,6 @@ public:
 
     void run();
 
-    // Методы для добавления и удаления воркеров
     void setAddWorkers(short count);
     void setDeleteWorker(int workerId);
 
@@ -30,7 +29,7 @@ public:
 
     // Сигналы
 signals:
-    void taskAdded(std::shared_ptr<ITask> task); // Используем std::shared_ptr для совместимости
+    void taskAdded(std::shared_ptr<ITask> task);
     void workersChanged();
 
 private:
@@ -38,7 +37,7 @@ private:
     short countAddTask = 0;
     std::mutex mutex;
     std::condition_variable condition;
-    std::vector<int> vecWorkerDelete;   // Для ID воркеров, которые нужно удалить
+    std::vector<int> vecWorkerDelete;
     std::vector<short> vecTaskDelete;
     short countAddWorkers;
     bool flagCloseApp;

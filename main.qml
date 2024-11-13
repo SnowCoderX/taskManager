@@ -383,6 +383,7 @@ Window {
                         Text { text: "Всего: " + taskManager.totalTasks; color: textColor }
                         Text { text: "Ожидают: " + taskManager.waitingTasks; color: textColor }
                         Text { text: "В работе: " + taskManager.inProgressTasks; color: textColor }
+                        // Text { text: "Выполнено: " + taskManager.completedTasks; color: textColor }
                     }
 
                     Item { Layout.fillWidth: true } // Spacer

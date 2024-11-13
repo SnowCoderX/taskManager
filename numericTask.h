@@ -16,10 +16,10 @@ class NumericTask : public ITask, public ISerializableTask
 {
 public:
     NumericTask(T start, T end, T increment, QObject *parent = nullptr)
-        : ITask(parent), m_start(start), m_end(end), m_progress(start), m_increment(increment)
+        : ITask(parent), m_start(start), myEnd(end), myProgress(start), myIncrement(increment)
     {
         changeState(TaskState::Wait);
-        if (m_end == m_start)
+        if (myEnd == m_start)
             changeState(TaskState::Complete);
 
     }
@@ -32,14 +32,15 @@ public:
 
     void executeStep() override
     {
-        m_progress += m_increment;
-        QThread::msleep(50);
+        myProgress += myIncrement;
 
-        if (m_progress >= m_end) {
-            m_progress = m_end;
+        if (myProgress >= myEnd) {
+            myProgress = myEnd;
             closeTask();
+            return;
         }
-        emit progressUpdated(taskId);
+        if ((myEnd - myProgress) / myIncrement % 2 == 0)   //для уменьшения нагрузки в 2 раза на qml
+            emit progressUpdated(taskId);
     }
 
     void deleteTask() override {
@@ -54,10 +55,10 @@ public:
 
     int getProgress() const override
     {
-        if (m_end == m_start)
+        if (myEnd == m_start)
             return 100;
 
-        return std::min(100 ,static_cast<int>((static_cast<double>(m_progress - m_start) / (m_end - m_start) * 100)));
+        return std::min(100 ,static_cast<int>((static_cast<double>(myProgress - m_start) / (myEnd - m_start) * 100)));
     }
 
     std::string getStatus() const override
@@ -81,9 +82,9 @@ public:
         QJsonObject taskData;
         // taskData["taskId"] = taskId;
         taskData["type"] = QString::fromStdString(getType());
-        taskData["start"] = QVariant::fromValue(m_progress).toString();
-        taskData["end"] = QVariant::fromValue(m_end).toString();
-        taskData["increment"] = QVariant::fromValue(m_increment).toString();
+        taskData["start"] = QVariant::fromValue(myProgress).toString();
+        taskData["end"] = QVariant::fromValue(myEnd).toString();
+        taskData["increment"] = QVariant::fromValue(myIncrement).toString();
         // taskData["status"] = QString::fromStdString(status);
         return taskData;
     }
@@ -104,9 +105,9 @@ private:
     }
 
     T m_start;
-    T m_end;
-    T m_progress;
-    T m_increment;
+    T myEnd;
+    T myProgress;
+    T myIncrement;
     std::string status;
 };
 

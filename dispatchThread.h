@@ -19,9 +19,9 @@ public:
     void run() override;
     void stop();
 
-    std::condition_variable& getCondition() { return condition; }
-    std::mutex& getMutex()                  { return mutex; }
-    bool getFlagCloseApp() const            { return flagCloseApp; }
+    std::condition_variable& getCondition();
+    std::mutex& getMutex();
+    bool getFlagCloseApp() const;
 
 private:
     TaskManager* taskManager = nullptr;
