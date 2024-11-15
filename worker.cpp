@@ -71,7 +71,7 @@ void Worker::run()
         if(task && running)
             while (!task->isCompleted() && running) {
                 task->executeStep();
-                QThread::msleep(50);
+                QThread::msleep(100);
 //                if (task->flagDelete){
 //                    task->taskFinished(taskId);
 //                    break;
@@ -86,7 +86,7 @@ void Worker::run()
         emit taskFinished(workerId);
         //TODO тут надо засинхронить это и TasksModel::deleteTask(int taskId) чтоб можно
         //было таску удалять когда уже завершена но воркер ждет 5 сек
-        if(&taskBuf != nullptr)
+        if(taskBuf != nullptr)
             taskBuf->deleteTask();
     }
 }

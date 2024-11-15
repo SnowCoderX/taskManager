@@ -21,13 +21,20 @@ public:
         StatusRole
     };
 
-    void addWorker(std::unique_ptr<Worker> worker);
+    Q_INVOKABLE void addWorkers(short count);
     void updateWorker(int workerId);
     Worker* getFreeWorker();
     std::vector<Worker*> getAllWorkers() const;
     Worker* searchWorkerByTaskId(int taskId);
     int countWorkersByStatus(const QString& status) const;
     int countWorkersAll() const;
+
+    Q_PROPERTY(int totalWorkers READ getTotalWorkers NOTIFY workersChanged)
+    Q_PROPERTY(int waitingWorkers READ getWaitingWorkers NOTIFY workersChanged)
+    Q_PROPERTY(int busyWorkers READ getBusyWorkers NOTIFY workersChanged)
+    int getTotalWorkers() const;
+    int getWaitingWorkers() const;
+    int getBusyWorkers() const;
 
 signals:
     void workersChanged();

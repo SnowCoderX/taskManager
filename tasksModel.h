@@ -40,12 +40,12 @@ public:
     Q_INVOKABLE int getCountInProgressTasks();
 
     Q_INVOKABLE void updateTask(int taskId);
-    Q_INVOKABLE void sortTasksByStatus();
     Q_INVOKABLE int getOverallProgress() const;
 
 signals:
     void progressChanged(int overallProgress);
     void tasksChanged();
+    void emSort();
 
 protected:
     QHash<int, QByteArray> roleNames() const override;

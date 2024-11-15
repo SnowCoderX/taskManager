@@ -10,16 +10,16 @@
 
 TasksModel::TasksModel(QObject *parent) : QAbstractListModel(parent)
 {
-    threadTaskModel = new QThread();
-    moveToThread(threadTaskModel);
-    connect(threadTaskModel, &QThread::finished, threadTaskModel, &QThread::deleteLater);
-    threadTaskModel->start();
+    // threadTaskModel = new QThread();
+    // moveToThread(threadTaskModel);
+    // threadTaskModel->start();
 
-    QTimer *progressUpdateTimer = new QTimer(this);
+    // Таймер для обновления прогресса
+    QTimer *progressUpdateTimer = new QTimer();
     connect(progressUpdateTimer, &QTimer::timeout, this, [=]() {
         emit progressChanged(getOverallProgress());
     });
-    progressUpdateTimer->start(500);    //для оптимизации, так как все равно анимация 1.6сек
+    progressUpdateTimer->start(500);  // Обновление каждые 500 мс
 }
 
 void TasksModel::addTask(std::unique_ptr<ITask> task)
@@ -28,7 +28,7 @@ void TasksModel::addTask(std::unique_ptr<ITask> task)
         return;
     beginInsertRows(QModelIndex(), tasks.size(), tasks.size());
     tasks.push_back(std::move(task));
-    sortTasksByStatus();
+    // sortTasksByStatus();
 //    emit progressChanged(getOverallProgress());
     endInsertRows();
     emit tasksChanged();
@@ -36,7 +36,7 @@ void TasksModel::addTask(std::unique_ptr<ITask> task)
 
 int TasksModel::getOverallProgress() const
 {
-    return 0;   //TODO убираем чтобы сфокусироваться на главном
+    // return 0;   //TODO убираем чтобы сфокусироваться на главном
     if (tasks.empty()) return 100;
 
     int totalProgress = 0;
@@ -62,35 +62,6 @@ void TasksModel::updateTask(int taskId)
                 break;
         }
     }
-}
-
-void TasksModel::sortTasksByStatus()
-{
-    //TODO вернись потом если время останется
-    // std::sort(tasks.begin(), tasks.end(), [](const std::unique_ptr<ITask> &a, const std::unique_ptr<ITask> &b) {
-    //     const std::string statusA = a->getStatus();
-    //     const std::string statusB = b->getStatus();
-
-    //     auto getStatusPriority = [](const std::string &status) {
-    //         if (status.find("Выполняет исполнитель") != std::string::npos)
-    //             return 0;
-    //         if (status == "Ожидает")
-    //             return 1;
-    //         if (status == "Завершено")
-    //             return 2;
-    //         return 3;  // На случай неизвестного статуса
-    //     };
-
-    //     int priorityA = getStatusPriority(statusA);
-    //     int priorityB = getStatusPriority(statusB);
-
-    //     if (priorityA != priorityB)
-    //         return priorityA < priorityB;
-
-    //     return a->getId() < b->getId();
-    // });
-
-    // emit dataChanged(index(0), index(tasks.size() - 1));
 }
 
 ITask* TasksModel::getFreeTask()
@@ -208,33 +179,44 @@ QVariant TasksModel::data(const QModelIndex &index, int role) const
 template <typename T>
 void TasksModel::addRandomNumericTask(std::mt19937 &gen)
 {
-    T max_range = std::numeric_limits<T>::max();
+    // Определяем минимальное и максимальное значения для типа T
     T min_range = std::numeric_limits<T>::lowest();
+    T max_range = std::numeric_limits<T>::max();
 
-    std::uniform_int_distribution<T> startDist(min_range / 2, max_range / 2);
-    T m_start = startDist(gen);
+    // Устанавливаем начальное значение как минимум диапазона
+    T m_start = min_range;
 
-    std::uniform_int_distribution<T> endDist(m_start + 100, max_range);
-    T myEnd = endDist(gen);
-
-    std::uniform_int_distribution<T> incrementDist(1, std::max<T>((myEnd - m_start) / 600, 1));
-    T myIncrement = incrementDist(gen);
-
-    int steps = (myEnd - m_start) / myIncrement;
-    while (steps < 100 || steps > 600) {
-        m_start = startDist(gen);
-        myEnd = endDist(gen);
-        myIncrement = incrementDist(gen);
-        steps = (myEnd - m_start) / myIncrement;
+    // Определяем максимальное количество шагов, чтобы избежать переполнения
+    int maxSteps = 300;
+    if (std::is_same<T, char>::value || std::is_same<T, unsigned char>::value)
+    {
+        maxSteps = static_cast<int>((max_range - min_range) / 2); // Безопасный диапазон шагов для char/uchar
+        maxSteps = std::clamp(maxSteps, 50, 300);                // Ограничение в пределах 50–300
     }
 
+    // Выбираем случайное количество шагов в пределах безопасного диапазона
+    std::uniform_int_distribution<int> stepsDist(50, maxSteps);
+    int steps = stepsDist(gen);
+
+    // Вычисляем инкремент на основе диапазона и количества шагов
+    T myIncrement = (max_range - m_start) / steps;
+    if (myIncrement == 0)
+        myIncrement = 1;
+
+    // Вычисляем конечное значение
+    T myEnd = m_start + (myIncrement * steps);
+
+    // Создаем задачу
     auto task = std::make_unique<NumericTask<T>>(m_start, myEnd, myIncrement, this);
     int taskId = task->getId();
-    // connect(task.get(), &ITask::taskFinished, [this]            {emit tasksChanged();} );
-    connect(task.get(), &ITask::taskFinished, [this, taskId]    {updateTask(taskId);});
-    connect(task.get(), &ITask::taskDelete, this, [this, taskId]{deleteTask(taskId);});
-    connect(task.get(), &ITask::progressUpdated, [this, taskId] {updateTask(taskId);});
-    // connect(task.get(), &ITask::statusChanged, [this]           {sortTasksByStatus();});
 
+    // Подключаем сигналы задачи
+    connect(task.get(), &ITask::taskFinished, [this, taskId]    { updateTask(taskId); });
+    connect(task.get(), &ITask::taskDelete, this, [this, taskId]{ deleteTask(taskId); });
+    connect(task.get(), &ITask::progressUpdated, [this, taskId] { updateTask(taskId); });
+
+    // Добавляем задачу
     addTask(std::move(task));
 }
+
+

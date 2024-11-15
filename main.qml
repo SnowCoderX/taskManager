@@ -254,7 +254,7 @@ Window {
                         Item { Layout.fillWidth: true } //spacer
                         Button {
                             text: "+1"
-                            onClicked: taskManager.addWorkers(1)
+                            onClicked: workersModel.addWorkers(1)
                             Layout.preferredWidth: 40
                             Layout.alignment: Qt.AlignRight
                             style: ButtonStyle {
@@ -416,9 +416,9 @@ Window {
                         RowLayout {
                             Text {text: "Исполнители    "; color: textColor}
                         }
-                        Text { text: "Всего: " + taskManager.totalWorkers; color: textColor }
-                        Text { text: "Ожидают: " + taskManager.waitingWorkers; color: textColor }
-                        Text { text: "В работе: " + taskManager.busyWorkers; color: textColor }
+                        Text { text: "Всего: " + workersModel.totalWorkers; color: textColor }
+                        Text { text: "Ожидают: " + workersModel.waitingWorkers; color: textColor }
+                        Text { text: "В работе: " + workersModel.busyWorkers; color: textColor }
                     }
 
                 }

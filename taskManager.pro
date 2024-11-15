@@ -3,7 +3,7 @@ CONFIG += c++17
 
 SOURCES += \
     #addDelThread.cpp \
-    dispatchThread.cpp \
+    #dispatchThread.cpp \
     main.cpp \
     iTask.cpp \
     taskManager.cpp \
@@ -13,7 +13,7 @@ SOURCES += \
 
 HEADERS += \
     #addDelThread.h \
-    dispatchThread.h \
+    #dispatchThread.h \
     iSerializableTask.h \
     #TaskFactory.h \
     taskManager.h \

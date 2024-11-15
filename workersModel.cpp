@@ -5,28 +5,42 @@
 WorkersModel::WorkersModel(QObject* parent)
     : QAbstractListModel(parent)
 {
-
-}
-
-void WorkersModel::addWorker(std::unique_ptr<Worker> worker)
-{
     //TODO многопоточка
     // threadWorkerModel = new QThread();
     // moveToThread(threadWorkerModel);
+}
 
-    connect(worker.get(), &Worker::taskFinished, this, [this](int workerId) {
-        updateWorker(workerId);
-    });
+void WorkersModel::addWorkers(short count)
+{
+    if (workers.size() >= 1000)
+        return;
 
-    connect(worker.get(), &Worker::changeStatus, this, [this](int workerId) {
-        updateWorker(workerId);
-    });
+    for (int i = 0; i < count; ++i) {
+        auto worker = std::make_unique<Worker>(this);
+        worker->start();
 
-    std::lock_guard<std::mutex> lock(mutexWorkers);
-    beginInsertRows(QModelIndex(), workers.size(), workers.size());
-    workers.push_back(std::move(worker));
-    emit workersChanged();
-    endInsertRows();
+        connect(worker.get(), &Worker::taskFinished, this, [this](int workerId) {
+            updateWorker(workerId);
+            //dispatchThread->getCondition().notify_one(); // Уведомляем для новой диспетчеризации
+            emit workersChanged();
+        }, Qt::QueuedConnection);
+
+        //dispatchThread->getCondition().notify_one();
+        connect(worker.get(), &Worker::taskFinished, this, [this](int workerId) {
+            updateWorker(workerId);
+        });
+
+        connect(worker.get(), &Worker::changeStatus, this, [this](int workerId) {
+            updateWorker(workerId);
+        });
+
+        // std::lock_guard<std::mutex> lock(mutexWorkers);
+        beginInsertRows(QModelIndex(), workers.size(), workers.size());
+        workers.push_back(std::move(worker));
+        emit workersChanged();
+        endInsertRows();
+
+    }
 }
 
 void WorkersModel::updateWorker(int workerId)
@@ -41,7 +55,7 @@ void WorkersModel::updateWorker(int workerId)
 
 Worker* WorkersModel::getFreeWorker()
 {
-    std::lock_guard<std::mutex> lock(mutexWorkers);
+    // std::lock_guard<std::mutex> lock(mutexWorkers);
     for (const auto &worker : workers)
         if (!worker->isRun())
             return worker.get();
@@ -51,7 +65,7 @@ Worker* WorkersModel::getFreeWorker()
 
 std::vector<Worker*> WorkersModel::getAllWorkers() const
 {
-    std::lock_guard<std::mutex> lock(mutexWorkers);
+    // std::lock_guard<std::mutex> lock(mutexWorkers);
     std::vector<Worker*> allWorkers;
     for (const auto& worker : workers)
         allWorkers.push_back(worker.get());
@@ -61,7 +75,7 @@ std::vector<Worker*> WorkersModel::getAllWorkers() const
 
 Worker* WorkersModel::searchWorkerByTaskId(int taskId)
 {
-    std::lock_guard<std::mutex> lock(mutexWorkers);
+    // std::lock_guard<std::mutex> lock(mutexWorkers);
     for (const auto& worker : workers)
         if (worker->getTaskId() == taskId)
             return worker.get();
@@ -71,15 +85,25 @@ Worker* WorkersModel::searchWorkerByTaskId(int taskId)
 
 int WorkersModel::countWorkersByStatus(const QString &status) const
 {
-    std::lock_guard<std::mutex> lock(mutexWorkers);
+    // std::lock_guard<std::mutex> lock(mutexWorkers);
     return std::count_if(workers.begin(), workers.end(), [&](const auto& worker) {
         return worker->getStatus().contains(status);
     });
 }
 
-int WorkersModel::countWorkersAll() const
+int WorkersModel::getTotalWorkers() const
 {
     return workers.size();
+}
+
+int WorkersModel::getWaitingWorkers() const
+{
+    return countWorkersByStatus("Ожидает");
+}
+
+int WorkersModel::getBusyWorkers() const
+{
+    return countWorkersByStatus("Выполняет задачу №");
 }
 
 //protected:

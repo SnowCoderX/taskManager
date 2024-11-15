@@ -43,7 +43,10 @@ int main(int argc, char *argv[])
     bool flagDarkTheme = settings.value("theme/darkMode", true).toBool();
     QCoreApplication::instance()->thread()->setPriority(QThread::HighPriority);
 
+    // TasksModel* tasksModel = new TasksModel();
+
     TaskManager taskManager;
+    // taskManager.setTasksModel(tasksModel);
 
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("tasksModel", taskManager.getTasksModel());
