@@ -16,8 +16,8 @@
 
 TaskManager::TaskManager(QObject *parent)
     : QObject(parent),
-    tasksModel(std::make_unique<TasksModel>(this)),
-    workersModel(std::make_unique<WorkersModel>(this)),
+    tasksModel(std::make_unique<TasksModel>()),
+    workersModel(std::make_unique<WorkersModel>()),
     flagCloseApp(false)
 {
     // dispatchThread = new DispatchThread(this);
@@ -37,10 +37,10 @@ void TaskManager::stopAllWorkers()
     flagCloseApp = true;
     // dispatchThread->getCondition().notify_all();
 
-    for (auto& worker : workersModel->getAllWorkers())
-        if (worker)
-            worker->stop();
-    emit workersChanged();
+    // for (auto& worker : workersModel->getAllWorkers())
+    //     if (worker)
+    //         worker->stop();
+    // emit workersChanged();
 }
 
 TasksModel *TaskManager::getTasksModel() const
@@ -125,24 +125,24 @@ void TaskManager::clearBackupTasks()
 void TaskManager::safeWorkers()
 {
     return; //TODO зачистка для фокуса на главном
-    QJsonObject saveData;
-    QJsonArray workersArray;
+    // QJsonObject saveData;
+    // QJsonArray workersArray;
 
-    for (const auto &worker : workersModel->getAllWorkers()) {
-        QJsonObject workerObj;
+    // for (const auto &worker : workersModel->getAllWorkers()) {
+    //     QJsonObject workerObj;
 
-        workerObj["id"] = worker->getId();
-        workersArray.append(workerObj);
-    }
+    //     workerObj["id"] = worker->getId();
+    //     workersArray.append(workerObj);
+    // }
 
-    saveData["workers"] = workersArray;
+    // saveData["workers"] = workersArray;
 
-    QFile saveFile("workers_backup.json");
-    if (saveFile.open(QIODevice::WriteOnly)) {
-        QJsonDocument saveDoc(saveData);
-        saveFile.write(saveDoc.toJson());
-        saveFile.close();
-    }
+    // QFile saveFile("workers_backup.json");
+    // if (saveFile.open(QIODevice::WriteOnly)) {
+    //     QJsonDocument saveDoc(saveData);
+    //     saveFile.write(saveDoc.toJson());
+    //     saveFile.close();
+    // }
 }
 
 void TaskManager::loadWorkers()
@@ -194,18 +194,15 @@ void TaskManager::dispatchTasks()
     if (flagCloseApp)
         return;
 
-    if(workersModel && tasksModel){
-        Worker* worker = workersModel->getFreeWorker();
-        ITask* task = tasksModel->getFreeTask();
+        std::shared_ptr<Worker> worker = workersModel->getFreeWorker();
+        std::shared_ptr<ITask> task = tasksModel->getFreeTask();
 
         if (worker && task) {
             worker->assignTask(task);
             task->take(worker->getId());
-            worker = workersModel->getFreeWorker();
-            task = tasksModel->getFreeTask();
-            emit workersChanged();
-            emit tasksChanged();
+            // emit workersChanged();
+            // emit tasksChanged();
         }
-    }
+
     QTimer::singleShot(1, this, SLOT(dispatchTasks()));
 }

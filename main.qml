@@ -273,7 +273,7 @@ Window {
                         }
                         Button {
                             text: "+10"
-                            onClicked: taskManager.addWorkers(10)
+                            onClicked: workersModel.addWorkers(10)
                             Layout.preferredWidth: 40
                             Layout.alignment: Qt.AlignRight
                             style: ButtonStyle {
@@ -292,7 +292,7 @@ Window {
                         }
                         Button {
                             text: "+50"
-                            onClicked: taskManager.addWorkers(50)
+                            onClicked: workersModel.addWorkers(50)
                             Layout.preferredWidth: 40
                             Layout.alignment: Qt.AlignRight
                             style: ButtonStyle {
@@ -311,7 +311,7 @@ Window {
                         }
                         Button {
                             text: "+200"
-                            onClicked: taskManager.addWorkers(200)
+                            onClicked: workersModel.addWorkers(200)
                             Layout.preferredWidth: 40
                             Layout.alignment: Qt.AlignRight
                             style: ButtonStyle {

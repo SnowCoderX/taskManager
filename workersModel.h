@@ -23,9 +23,8 @@ public:
 
     Q_INVOKABLE void addWorkers(short count);
     void updateWorker(int workerId);
-    Worker* getFreeWorker();
-    std::vector<Worker*> getAllWorkers() const;
-    Worker* searchWorkerByTaskId(int taskId);
+    std::shared_ptr<Worker> getFreeWorker();
+    std::shared_ptr<Worker> searchWorkerByTaskId(int taskId);
     int countWorkersByStatus(const QString& status) const;
     int countWorkersAll() const;
 
@@ -46,7 +45,7 @@ protected:
 
 private:
     QThread* threadWorkerModel;
-    std::vector<std::unique_ptr<Worker>> workers;
+    std::vector<std::shared_ptr<Worker>> workers;
     mutable std::mutex mutexWorkers;
 };
 

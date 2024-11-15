@@ -30,7 +30,7 @@ public:
     virtual void deleteTask() = 0;
     virtual bool isCompleted() const = 0;
     virtual int getProgress() const = 0;
-    virtual int getId() const                   { return taskId; }
+    int getId() const                           { return taskId; }
     virtual std::string getWorkerId()           { return workerId == 0 ? "Ошибка" : std::to_string(workerId); }
     virtual QString getStatus() const = 0;
     virtual std::string getType() const = 0;

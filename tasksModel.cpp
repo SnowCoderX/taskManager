@@ -10,10 +10,6 @@
 
 TasksModel::TasksModel(QObject *parent) : QAbstractListModel(parent)
 {
-    // threadTaskModel = new QThread();
-    // moveToThread(threadTaskModel);
-    // threadTaskModel->start();
-
     // Таймер для обновления прогресса
     QTimer *progressUpdateTimer = new QTimer();
     connect(progressUpdateTimer, &QTimer::timeout, this, [=]() {
@@ -22,21 +18,24 @@ TasksModel::TasksModel(QObject *parent) : QAbstractListModel(parent)
     progressUpdateTimer->start(500);  // Обновление каждые 500 мс
 }
 
-void TasksModel::addTask(std::unique_ptr<ITask> task)
+void TasksModel::addTask(std::shared_ptr<ITask> task)
 {
     if (tasks.size() >= 1000)
         return;
+
+    int taskId = task->getId();
+    connect(task.get(), &ITask::taskFinished, [this, taskId]    { updateTask(taskId); });
+    connect(task.get(), &ITask::taskDelete, this, [this, taskId]{ deleteTask(taskId); });
+    connect(task.get(), &ITask::progressUpdated, [this, taskId] { updateTask(taskId); });
+
     beginInsertRows(QModelIndex(), tasks.size(), tasks.size());
     tasks.push_back(std::move(task));
-    // sortTasksByStatus();
-//    emit progressChanged(getOverallProgress());
     endInsertRows();
     emit tasksChanged();
 }
 
 int TasksModel::getOverallProgress() const
 {
-    // return 0;   //TODO убираем чтобы сфокусироваться на главном
     if (tasks.empty()) return 100;
 
     int totalProgress = 0;
@@ -52,25 +51,23 @@ int TasksModel::getOverallProgress() const
 
 void TasksModel::updateTask(int taskId)
 {
-    for (int i = 0; i < tasks.size(); ++i) {
-        // std::lock_guard<std::mutex> lock(mutexTasks);
-        if (tasks[i] != nullptr)
-            if (tasks[i]->getId() == taskId) {
-                emit dataChanged(index(i), index(i));
-                // emit progressChanged(getOverallProgress());
-                emit tasksChanged();
-                break;
-        }
+    auto it = std::find_if(tasks.begin(), tasks.end(), [taskId](const auto& task) {
+        return task->getId() == taskId; });
+
+    if (it != tasks.end()) {
+        int ind = std::distance(tasks.begin(), it);
+        emit dataChanged(index(ind), index(ind));
+        // emit progressChanged(getOverallProgress());
+        emit tasksChanged();
     }
 }
 
-ITask* TasksModel::getFreeTask()
+std::shared_ptr<ITask> TasksModel::getFreeTask()
 {
     for (const auto& task : tasks){
-        // std::lock_guard<std::mutex> lock(mutexTasks);
         if (task != nullptr)
             if (task->getStatus() == "Ожидает")
-                return task.get();
+                return task;
     }
 
     return nullptr;
@@ -82,10 +79,9 @@ int TasksModel::getCountTasksByStatus(const QString &status) const
         return task->getStatus().contains(status);
     });
 }
-//TODO когда заносятся таски после добавления воркеров, то не запускается диспетчеризация автоматом
+
 void TasksModel::addNumericTask(short count)
 {
-    //TODO перенос в модель
     for (int i = 0; i < count; ++i) {
         // std::lock_guard<std::mutex> lock(taskMutex);
         std::random_device rd;
@@ -99,9 +95,7 @@ void TasksModel::addNumericTask(short count)
         else if (typeChoice == 4)   addRandomNumericTask<int>(gen);
         else if (typeChoice == 5)   addRandomNumericTask<uint>(gen);
 
-        // dispatchThread->getCondition().notify_one();
-        // if (i % 100 == 0)
-            emit tasksChanged();
+        emit tasksChanged();
     }
 }
 
@@ -112,8 +106,6 @@ void TasksModel::deleteTask(int taskId)
 
     if (it != tasks.end()) {
         int index = std::distance(tasks.begin(), it);
-
-        // std::lock_guard<std::mutex> lock(mutexTasks);
 
         beginRemoveRows(QModelIndex(), index, index);
         tasks.erase(it);
@@ -179,14 +171,11 @@ QVariant TasksModel::data(const QModelIndex &index, int role) const
 template <typename T>
 void TasksModel::addRandomNumericTask(std::mt19937 &gen)
 {
-    // Определяем минимальное и максимальное значения для типа T
     T min_range = std::numeric_limits<T>::lowest();
     T max_range = std::numeric_limits<T>::max();
 
-    // Устанавливаем начальное значение как минимум диапазона
     T m_start = min_range;
 
-    // Определяем максимальное количество шагов, чтобы избежать переполнения
     int maxSteps = 300;
     if (std::is_same<T, char>::value || std::is_same<T, unsigned char>::value)
     {
@@ -194,28 +183,17 @@ void TasksModel::addRandomNumericTask(std::mt19937 &gen)
         maxSteps = std::clamp(maxSteps, 50, 300);                // Ограничение в пределах 50–300
     }
 
-    // Выбираем случайное количество шагов в пределах безопасного диапазона
     std::uniform_int_distribution<int> stepsDist(50, maxSteps);
     int steps = stepsDist(gen);
 
-    // Вычисляем инкремент на основе диапазона и количества шагов
     T myIncrement = (max_range - m_start) / steps;
     if (myIncrement == 0)
         myIncrement = 1;
 
-    // Вычисляем конечное значение
     T myEnd = m_start + (myIncrement * steps);
 
-    // Создаем задачу
-    auto task = std::make_unique<NumericTask<T>>(m_start, myEnd, myIncrement, this);
-    int taskId = task->getId();
+    auto task = std::make_shared<NumericTask<T>>(m_start, myEnd, myIncrement, this);
 
-    // Подключаем сигналы задачи
-    connect(task.get(), &ITask::taskFinished, [this, taskId]    { updateTask(taskId); });
-    connect(task.get(), &ITask::taskDelete, this, [this, taskId]{ deleteTask(taskId); });
-    connect(task.get(), &ITask::progressUpdated, [this, taskId] { updateTask(taskId); });
-
-    // Добавляем задачу
     addTask(std::move(task));
 }
 

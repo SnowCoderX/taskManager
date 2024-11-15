@@ -12,7 +12,7 @@ Worker::Worker(QObject *parent)
 
 }
 
-void Worker::assignTask(ITask* task)
+void Worker::assignTask(std::shared_ptr<ITask> task)
 {
     std::lock_guard<std::mutex> lock(taskMutex);
     this->task = task;
@@ -72,21 +72,12 @@ void Worker::run()
             while (!task->isCompleted() && running) {
                 task->executeStep();
                 QThread::msleep(100);
-//                if (task->flagDelete){
-//                    task->taskFinished(taskId);
-//                    break;
-//                }
             }
 
-        running = false;
+        task->deleteTask();
         QThread::sleep(5);
-        ITask* taskBuf = task;
+        running = false;
         status = QString("Ожидает");
-        task = nullptr;
-        emit taskFinished(workerId);
-        //TODO тут надо засинхронить это и TasksModel::deleteTask(int taskId) чтоб можно
-        //было таску удалять когда уже завершена но воркер ждет 5 сек
-        if(taskBuf != nullptr)
-            taskBuf->deleteTask();
+        emit taskFinished(workerId);    //TODO переименовать сигнал
     }
 }

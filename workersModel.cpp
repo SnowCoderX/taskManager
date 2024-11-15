@@ -5,9 +5,7 @@
 WorkersModel::WorkersModel(QObject* parent)
     : QAbstractListModel(parent)
 {
-    //TODO многопоточка
-    // threadWorkerModel = new QThread();
-    // moveToThread(threadWorkerModel);
+
 }
 
 void WorkersModel::addWorkers(short count)
@@ -16,14 +14,14 @@ void WorkersModel::addWorkers(short count)
         return;
 
     for (int i = 0; i < count; ++i) {
-        auto worker = std::make_unique<Worker>(this);
+        auto worker = std::make_shared<Worker>();
         worker->start();
 
         connect(worker.get(), &Worker::taskFinished, this, [this](int workerId) {
             updateWorker(workerId);
             //dispatchThread->getCondition().notify_one(); // Уведомляем для новой диспетчеризации
             emit workersChanged();
-        }, Qt::QueuedConnection);
+        }/*, Qt::QueuedConnection*/);
 
         //dispatchThread->getCondition().notify_one();
         connect(worker.get(), &Worker::taskFinished, this, [this](int workerId) {
@@ -39,7 +37,6 @@ void WorkersModel::addWorkers(short count)
         workers.push_back(std::move(worker));
         emit workersChanged();
         endInsertRows();
-
     }
 }
 
@@ -53,32 +50,22 @@ void WorkersModel::updateWorker(int workerId)
     }
 }
 
-Worker* WorkersModel::getFreeWorker()
+std::shared_ptr<Worker> WorkersModel::getFreeWorker()
 {
     // std::lock_guard<std::mutex> lock(mutexWorkers);
     for (const auto &worker : workers)
         if (!worker->isRun())
-            return worker.get();
+            return worker;
 
     return nullptr;
 }
 
-std::vector<Worker*> WorkersModel::getAllWorkers() const
-{
-    // std::lock_guard<std::mutex> lock(mutexWorkers);
-    std::vector<Worker*> allWorkers;
-    for (const auto& worker : workers)
-        allWorkers.push_back(worker.get());
-
-    return allWorkers;
-}
-
-Worker* WorkersModel::searchWorkerByTaskId(int taskId)
+std::shared_ptr<Worker> WorkersModel::searchWorkerByTaskId(int taskId)
 {
     // std::lock_guard<std::mutex> lock(mutexWorkers);
     for (const auto& worker : workers)
         if (worker->getTaskId() == taskId)
-            return worker.get();
+            return worker;
 
     return nullptr;
 }

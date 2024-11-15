@@ -14,7 +14,7 @@ class Worker : public QThread
 public:
     explicit Worker(QObject *parent = nullptr);
 
-    void assignTask(ITask* task);
+    void assignTask(std::shared_ptr<ITask> task);
     bool isRun() const;
     QString getStatus() const;
     int getId() const;
@@ -31,9 +31,9 @@ protected:
     int taskId = 0;
 
 private:
-    ITask* task = nullptr;
-    int workerId;
     std::atomic<bool> running;
+    std::shared_ptr<ITask> task;
+    int workerId;
     QString status;
     static std::atomic<int> countWorkers;
     std::mutex taskMutex;

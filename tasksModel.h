@@ -25,8 +25,8 @@ public:
         TypeRole
     };
 
-    void addTask(std::unique_ptr<ITask> task);
-    ITask* getFreeTask();
+    void addTask(std::shared_ptr<ITask> task);
+    std::shared_ptr<ITask> getFreeTask();
     int getCountTasksByStatus(const QString& status) const;
 
     Q_PROPERTY(int totalTasks READ getCountTasksAll NOTIFY tasksChanged)
@@ -45,7 +45,6 @@ public:
 signals:
     void progressChanged(int overallProgress);
     void tasksChanged();
-    void emSort();
 
 protected:
     QHash<int, QByteArray> roleNames() const override;
@@ -54,7 +53,7 @@ protected:
 
 private:
     QThread* threadTaskModel;
-    std::vector<std::unique_ptr<ITask>> tasks;
+    std::vector<std::shared_ptr<ITask>> tasks;
     mutable std::mutex mutexTasks;
 
     template <typename T>

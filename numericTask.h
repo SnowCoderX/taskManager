@@ -39,7 +39,7 @@ public:
             closeTask();
             return;
         }
-        if ((myEnd - myProgress) / myIncrement % 2 == 0)   //для уменьшения нагрузки в 2 раза на qml
+        if ((myEnd - myProgress) / myIncrement % 2 == 0)   //для уменьшения нагрузки на qml
             emit progressUpdated(taskId);
     }
 
