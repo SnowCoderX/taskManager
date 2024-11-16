@@ -1,6 +1,4 @@
 #include "worker.h"
-// #include <QTimer>
-#include <iostream>
 
 std::atomic<int> Worker::countWorkers{0};
 
@@ -71,13 +69,13 @@ void Worker::run()
         if(task && running)
             while (!task->isCompleted() && running) {
                 task->executeStep();
-                QThread::msleep(100);
+                QThread::msleep(200);
             }
 
-        task->deleteTask();
         QThread::sleep(5);
         running = false;
+        task->deleteTask();
         status = QString("Ожидает");
-        emit taskFinished(workerId);    //TODO переименовать сигнал
+        emit changeStatus(workerId);
     }
 }

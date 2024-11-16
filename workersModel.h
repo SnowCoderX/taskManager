@@ -27,6 +27,7 @@ public:
     std::shared_ptr<Worker> searchWorkerByTaskId(int taskId);
     int countWorkersByStatus(const QString& status) const;
     int countWorkersAll() const;
+    void stopAllWorkers();
 
     Q_PROPERTY(int totalWorkers READ getTotalWorkers NOTIFY workersChanged)
     Q_PROPERTY(int waitingWorkers READ getWaitingWorkers NOTIFY workersChanged)
@@ -46,7 +47,6 @@ protected:
 private:
     QThread* threadWorkerModel;
     std::vector<std::shared_ptr<Worker>> workers;
-    mutable std::mutex mutexWorkers;
 };
 
 #endif // WORKERSMODEL_H

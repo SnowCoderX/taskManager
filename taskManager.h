@@ -2,8 +2,6 @@
 #define TASKMANAGER_H
 
 #include <memory>
-#include <condition_variable>
-#include <random>
 
 #include <QObject>
 
@@ -23,16 +21,8 @@ public:
     TasksModel* getTasksModel() const;
     WorkersModel* getWorkersModel() const;
 
-    void safeTasks();
-    void loadTasks();
-    void clearBackupTasks();
-
-    void safeWorkers();
-    void loadWorkers();
-    void clearBackupWorkers();
-
     Q_INVOKABLE static QString recommendedCountWorkers();
-    Q_INVOKABLE void stopAllWorkers();
+    Q_INVOKABLE void stopWork();
 
 signals:
     void tasksChanged();
@@ -44,10 +34,6 @@ public slots:
 private:
     std::unique_ptr<TasksModel> tasksModel;
     std::unique_ptr<WorkersModel> workersModel;
-    mutable std::mutex taskMutex;
-    mutable std::mutex workersMutex;
-    std::condition_variable dispetchCondition;
-    // DispatchThread* dispatchThread = nullptr;
     bool flagCloseApp = false;
 };
 #endif // TASKMANAGER_H

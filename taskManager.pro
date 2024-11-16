@@ -14,7 +14,7 @@ SOURCES += \
 HEADERS += \
     #addDelThread.h \
     #dispatchThread.h \
-    iSerializableTask.h \
+    #iSerializableTask.h \
     #TaskFactory.h \
     taskManager.h \
     iTask.h \

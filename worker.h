@@ -23,7 +23,6 @@ public:
     void stopTask();
 
 signals:
-    void taskFinished(int workerId);
     void changeStatus(int workerId);
 
 protected:
@@ -36,7 +35,6 @@ private:
     int workerId;
     QString status;
     static std::atomic<int> countWorkers;
-    std::mutex taskMutex;
     std::condition_variable taskCondition;
 };
 

@@ -17,22 +17,11 @@ void WorkersModel::addWorkers(short count)
         auto worker = std::make_shared<Worker>();
         worker->start();
 
-        connect(worker.get(), &Worker::taskFinished, this, [this](int workerId) {
-            updateWorker(workerId);
-            //dispatchThread->getCondition().notify_one(); // Уведомляем для новой диспетчеризации
-            emit workersChanged();
-        }/*, Qt::QueuedConnection*/);
-
-        //dispatchThread->getCondition().notify_one();
-        connect(worker.get(), &Worker::taskFinished, this, [this](int workerId) {
-            updateWorker(workerId);
-        });
-
         connect(worker.get(), &Worker::changeStatus, this, [this](int workerId) {
             updateWorker(workerId);
+            emit workersChanged();
         });
 
-        // std::lock_guard<std::mutex> lock(mutexWorkers);
         beginInsertRows(QModelIndex(), workers.size(), workers.size());
         workers.push_back(std::move(worker));
         emit workersChanged();
@@ -52,7 +41,6 @@ void WorkersModel::updateWorker(int workerId)
 
 std::shared_ptr<Worker> WorkersModel::getFreeWorker()
 {
-    // std::lock_guard<std::mutex> lock(mutexWorkers);
     for (const auto &worker : workers)
         if (!worker->isRun())
             return worker;
@@ -62,7 +50,6 @@ std::shared_ptr<Worker> WorkersModel::getFreeWorker()
 
 std::shared_ptr<Worker> WorkersModel::searchWorkerByTaskId(int taskId)
 {
-    // std::lock_guard<std::mutex> lock(mutexWorkers);
     for (const auto& worker : workers)
         if (worker->getTaskId() == taskId)
             return worker;
@@ -72,10 +59,16 @@ std::shared_ptr<Worker> WorkersModel::searchWorkerByTaskId(int taskId)
 
 int WorkersModel::countWorkersByStatus(const QString &status) const
 {
-    // std::lock_guard<std::mutex> lock(mutexWorkers);
     return std::count_if(workers.begin(), workers.end(), [&](const auto& worker) {
         return worker->getStatus().contains(status);
     });
+}
+
+void WorkersModel::stopAllWorkers()
+{
+    for (auto& worker : workers)
+        if (worker)
+            worker->stop();
 }
 
 int WorkersModel::getTotalWorkers() const
@@ -108,7 +101,7 @@ QVariant WorkersModel::data(const QModelIndex &index, int role) const
 
     const auto& worker = workers[index.row()];
     switch (role) {
-    case IdRole:        return worker->getId();                             break;
+    case IdRole:        return worker->getId();     break;
     case StatusRole:    return worker->getStatus(); break;
     }
 }

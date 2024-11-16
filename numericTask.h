@@ -9,10 +9,9 @@
 #include <QVariant>
 
 #include "iTask.h"
-#include "iSerializableTask.h"
 
 template <typename T>
-class NumericTask : public ITask, public ISerializableTask
+class NumericTask : public ITask
 {
 public:
     NumericTask(T start, T end, T increment, QObject *parent = nullptr)
@@ -75,18 +74,6 @@ public:
         if (typeid(T) == typeid(int))       return "int";
         if (typeid(T) == typeid(uint))      return "uint";
         return "unknown";
-    }
-
-    QJsonObject serialize() const override
-    {
-        QJsonObject taskData;
-        // taskData["taskId"] = taskId;
-        taskData["type"] = QString::fromStdString(getType());
-        taskData["start"] = QVariant::fromValue(myProgress).toString();
-        taskData["end"] = QVariant::fromValue(myEnd).toString();
-        taskData["increment"] = QVariant::fromValue(myIncrement).toString();
-        // taskData["status"] = QString::fromStdString(status);
-        return taskData;
     }
 
 private:
