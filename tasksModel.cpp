@@ -3,17 +3,41 @@
 #include <QThread>
 #include <QTimer>
 
-#include "numericTask.h"
-//public:
+#include "taskGenerator.h"
 
-TasksModel::TasksModel(QObject *parent) : QAbstractListModel(parent)
+Q_DECLARE_METATYPE(std::vector<std::shared_ptr<ITask>>)
+
+//public:
+TasksModel::TasksModel(QObject *parent) :
+    QAbstractListModel(parent)
+    , threadTaskModel(new QThread())
 {
-    // Таймер для обновления прогресса
-    QTimer *progressUpdateTimer = new QTimer();
+    qRegisterMetaType<std::vector<std::shared_ptr<ITask>>>("std::vector<std::shared_ptr<ITask>>");
+
+    progressUpdateTimer = new QTimer();
     connect(progressUpdateTimer, &QTimer::timeout, this, [=]() {
         emit progressChanged(getOverallProgress());
     });
     progressUpdateTimer->start(500);
+
+    TaskGenerator *generator = new TaskGenerator();
+    generator->moveToThread(threadTaskModel.get());
+
+    connect(this, &TasksModel::requestTaskGeneration, generator, &TaskGenerator::generateTasks);
+    connect(generator, &TaskGenerator::tasksGenerated, this, &TasksModel::handleGeneratedTasks);
+    connect(threadTaskModel.get(), &QThread::finished, generator, &QObject::deleteLater);
+
+    threadTaskModel->start();
+}
+
+TasksModel::~TasksModel()
+{
+    if (threadTaskModel->isRunning())
+    {
+        threadTaskModel->quit();
+        threadTaskModel->wait();
+    }
+    delete progressUpdateTimer;
 }
 
 void TasksModel::addTask(std::shared_ptr<ITask> task)
@@ -22,6 +46,7 @@ void TasksModel::addTask(std::shared_ptr<ITask> task)
     connect(task.get(), &ITask::taskFinished, [this, taskId]    { updateTask(taskId); });
     connect(task.get(), &ITask::taskDelete, this, [this, taskId]{ deleteTask(taskId); });
     connect(task.get(), &ITask::progressUpdated, [this, taskId] { updateTask(taskId); });
+    connect(task.get(), &ITask::statusChanged, [this, taskId]   { updateTask(taskId); });
 
     beginInsertRows(QModelIndex(), tasks.size(), tasks.size());
     tasks.push_back(std::move(task));
@@ -76,26 +101,10 @@ int TasksModel::getCountTasksByStatus(const QString &status) const
 
 void TasksModel::addNumericTask(short count)
 {
-    for (int i = 0; i < count; ++i) {
-        if (tasks.size() >= 1000)
-            return;
-
-        std::random_device rd;
-        std::mt19937 gen(rd());
-
-        int typeChoice = std::uniform_int_distribution<>(0, 5)(gen);
-        switch (typeChoice) {
-        case 0: addRandomNumericTask<char>(gen);    break;
-        case 1: addRandomNumericTask<uchar>(gen);   break;
-        case 2: addRandomNumericTask<short>(gen);   break;
-        case 3: addRandomNumericTask<ushort>(gen);  break;
-        case 4: addRandomNumericTask<int>(gen);     break;
-        case 5: addRandomNumericTask<uint>(gen);    break;
-        default:                                    break;
-        }
-
-        emit tasksChanged();
-    }
+    if (tasks.size() + count >= 1000)
+        emit requestTaskGeneration(1000 - tasks.size());
+    else
+        emit requestTaskGeneration(count);
 }
 
 void TasksModel::deleteTask(int taskId)
@@ -104,6 +113,9 @@ void TasksModel::deleteTask(int taskId)
         return task->getId() == taskId; });
 
     if (it != tasks.end()) {
+        if (it->get()->getStatus() != "Ожидает" && it->get()->getStatus() != "Завершена")
+            return;
+
         int index = std::distance(tasks.begin(), it);
 
         beginRemoveRows(QModelIndex(), index, index);
@@ -166,26 +178,8 @@ QVariant TasksModel::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
-template <typename T>
-void TasksModel::addRandomNumericTask(std::mt19937 &gen)
-{
-    T min_range = std::numeric_limits<T>::lowest();
-    T max_range = std::numeric_limits<T>::max();
-
-    T m_start = min_range;
-
-    std::uniform_int_distribution<int> stepsDist(25, 150);
-    int steps = stepsDist(gen);
-
-    T myIncrement = (max_range - m_start) / steps;
-    if (myIncrement == 0)
-        myIncrement = 1;
-
-    T myEnd = m_start + (myIncrement * steps);
-
-    auto task = std::make_shared<NumericTask<T>>(m_start, myEnd, myIncrement, this);
-
-    addTask(std::move(task));
+void TasksModel::handleGeneratedTasks(const std::vector<std::shared_ptr<ITask>> &generatedTasks) {
+    for (auto task : generatedTasks)
+        addTask(task);
 }
-
 

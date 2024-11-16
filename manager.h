@@ -8,15 +8,12 @@
 #include "workersModel.h"
 #include "tasksModel.h"
 
-// class DispatchThread;
-
-class TaskManager : public QObject
+class Manager : public QObject
 {
     Q_OBJECT
-    // friend DispatchThread;
 
 public:
-    explicit TaskManager(QObject *parent = nullptr);
+    explicit Manager(QObject *parent = nullptr);
 
     TasksModel* getTasksModel() const;
     WorkersModel* getWorkersModel() const;

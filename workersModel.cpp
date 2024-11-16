@@ -8,26 +8,6 @@ WorkersModel::WorkersModel(QObject* parent)
 
 }
 
-void WorkersModel::addWorkers(short count)
-{
-    if (workers.size() >= 1000)
-        return;
-
-    for (int i = 0; i < count; ++i) {
-        auto worker = std::make_shared<Worker>();
-        worker->start();
-
-        connect(worker.get(), &Worker::changeStatus, this, [this](int workerId) {
-            updateWorker(workerId);
-            emit workersChanged();
-        });
-
-        beginInsertRows(QModelIndex(), workers.size(), workers.size());
-        workers.push_back(std::move(worker));
-        emit workersChanged();
-        endInsertRows();
-    }
-}
 
 void WorkersModel::updateWorker(int workerId)
 {
@@ -84,6 +64,48 @@ int WorkersModel::getWaitingWorkers() const
 int WorkersModel::getBusyWorkers() const
 {
     return countWorkersByStatus("Выполняет задачу №");
+}
+
+void WorkersModel::addWorkers(short count)
+{
+    if (workers.size() >= 1000)
+        return;
+
+    for (int i = 0; i < count; ++i) {
+        auto worker = std::make_shared<Worker>();
+        worker->start();
+
+        connect(worker.get(), &Worker::changeStatus, this, [this](int workerId) {
+            updateWorker(workerId);
+            emit workersChanged();
+        });
+
+        beginInsertRows(QModelIndex(), workers.size(), workers.size());
+        workers.push_back(std::move(worker));
+        emit workersChanged();
+        endInsertRows();
+    }
+}
+
+void WorkersModel::deleteWorker(int workerId)
+{
+    auto it = std::find_if(workers.begin(), workers.end(), [workerId](const auto& worker) {
+        return worker->getId() == workerId; });
+
+    if (it != workers.end()) {
+        int index = std::distance(workers.begin(), it);
+        if (it->get()->isRunning()) {
+            it->get()->stop();
+            it->get()->quit();
+            it->get()->wait();
+        }
+
+        beginRemoveRows(QModelIndex(), index, index);
+        workers.erase(it);
+        endRemoveRows();
+
+        emit  workersChanged();
+    }
 }
 
 //protected:

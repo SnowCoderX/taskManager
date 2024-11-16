@@ -2,21 +2,17 @@ QT += core gui quick concurrent
 CONFIG += c++17
 
 SOURCES += \
-    #addDelThread.cpp \
-    #dispatchThread.cpp \
     main.cpp \
     iTask.cpp \
-    taskManager.cpp \
+    manager.cpp \
     worker.cpp \
     tasksModel.cpp \
     workersModel.cpp
 
 HEADERS += \
-    #addDelThread.h \
-    #dispatchThread.h \
     #iSerializableTask.h \
-    #TaskFactory.h \
-    taskManager.h \
+    taskGenerator.h \
+    manager.h \
     iTask.h \
     numericTask.h \
     worker.h \

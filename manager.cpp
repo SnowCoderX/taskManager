@@ -1,4 +1,4 @@
-#include "taskManager.h"
+#include "manager.h"
 
 #include <QThread>
 #include<QJsonObject>
@@ -9,7 +9,7 @@
 
 //public:
 
-TaskManager::TaskManager(QObject *parent)
+Manager::Manager(QObject *parent)
     : QObject(parent),
     tasksModel(std::make_unique<TasksModel>()),
     workersModel(std::make_unique<WorkersModel>()),
@@ -18,29 +18,28 @@ TaskManager::TaskManager(QObject *parent)
     dispatchTasks();
 }
 
-QString TaskManager::recommendedCountWorkers()  //static
+QString Manager::recommendedCountWorkers()  //static
 {
     return QString::number(QThread::idealThreadCount());
 }
 
-void TaskManager::stopWork()
+void Manager::stopWork()
 {
     flagCloseApp = true;
     workersModel->stopAllWorkers();
-    //TODO ремув всё нах, деструктурируем по полной
 }
 
-TasksModel *TaskManager::getTasksModel() const
+TasksModel *Manager::getTasksModel() const
 {
     return tasksModel.get();
 }
 
-WorkersModel *TaskManager::getWorkersModel() const
+WorkersModel *Manager::getWorkersModel() const
 {
     return workersModel.get();
 }
 
-void TaskManager::dispatchTasks()
+void Manager::dispatchTasks()
 {
     if (flagCloseApp)
         return;
@@ -48,10 +47,8 @@ void TaskManager::dispatchTasks()
     std::shared_ptr<Worker> worker = workersModel->getFreeWorker();
     std::shared_ptr<ITask> task = tasksModel->getFreeTask();
 
-    if (worker && task) {
+    if (worker && task)
         worker->assignTask(task);
-        task->take(worker->getId());
-    }
 
     QTimer::singleShot(1, this, SLOT(dispatchTasks()));
 }

@@ -13,6 +13,7 @@ Worker::Worker(QObject *parent)
 void Worker::assignTask(std::shared_ptr<ITask> task)
 {
     std::lock_guard<std::mutex> lock(taskMutex);
+    task->take(getId());
     this->task = task;
     taskId = task->getId();
     running = true;
@@ -45,17 +46,16 @@ void Worker::stop()
 {
     running = false;
     status = "Ожидает";
-    emit changeStatus(workerId);
-    taskCondition.notify_one();
-    terminate();
-}
 
-void Worker::stopTask()
-{
-    running = false;
-    status = "Ожидает";
+    //МОМЕНТ ДЛЯ ДИСКУСИИ: По идее, если задача уже выполнена, но она в ожидании своих "завершающих" 5 секунд и
+    //в этот момент удаляется воркер, то задача недозавершилась получается корректно, а завершением задачи ведь
+    //типа занимается воркер, поэтому я считаю логичным ставить и в этом случае статус у задачи "ожидает", так
+    //как несмотря на то, что она выполнена, она еще корректно не завершена и она ждет воркера чтобы он завершил
+    if (task)
+        task->changeState(TaskState::Wait);
+
     emit changeStatus(workerId);
-    taskCondition.notify_one();
+    terminate();
 }
 
 //protected:

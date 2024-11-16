@@ -2,7 +2,6 @@
 #define NUMERICTASK_H
 
 #include <string>
-// #include <iostream>
 
 #include <QThread>
 #include <QTimer>
@@ -31,13 +30,14 @@ public:
 
     void executeStep() override
     {
-        myProgress += myIncrement;
-
-        if (myProgress >= myEnd) {
+        if (myEnd - myIncrement > myProgress)
+            myProgress += myIncrement;
+        else {
             myProgress = myEnd;
             closeTask();
-            return;
+            return;    
         }
+
         if ((myEnd - myProgress) / myIncrement % 2 == 0)   //для уменьшения нагрузки на qml
             emit progressUpdated(taskId);
     }
@@ -76,15 +76,17 @@ public:
         return "unknown";
     }
 
-private:
-    void changeState(int state)
+    void changeState(int state) override
     {
-        if (state == TaskState::Complete)   status = "Завершена";
-        else if (state == TaskState::Active)status = "Выполняет исполнитель №" + QString::fromStdString(getWorkerId()); //TODO переделать потом так как тут просто лишнее это перемещение из string в QString и просто надо сделать QString
-        else if (state == TaskState::Wait)  status = "Ожидает";
+        switch (state) {
+        case TaskState::Complete:   status = "Завершена";                                                       break;
+        case TaskState::Active:     status = "Выполняет исполнитель №" + QString::fromStdString(getWorkerId()); break;
+        case TaskState::Wait:       status = "Ожидает";                                                         break;
+        default:                    status = "Ошибка";                                                          break;
+        }
         emit statusChanged();
     }
-
+private:
     void closeTask() override
     {
         changeState(TaskState::Complete);

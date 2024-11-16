@@ -1,11 +1,9 @@
-#include <iostream>
-
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QSettings>
 #include <QQmlContext>
 
-#include "taskManager.h"
+#include "manager.h"
 
 int main(int argc, char *argv[])
 {
@@ -23,16 +21,16 @@ int main(int argc, char *argv[])
     bool flagDarkTheme = settings.value("theme/darkMode", true).toBool();
     QCoreApplication::instance()->thread()->setPriority(QThread::HighPriority);
 
-    TaskManager taskManager;
+    Manager manager;
 
     QQmlApplicationEngine engine;
-    engine.rootContext()->setContextProperty("tasksModel", taskManager.getTasksModel());
-    engine.rootContext()->setContextProperty("workersModel", taskManager.getWorkersModel());
-    engine.rootContext()->setContextProperty("taskManager", &taskManager);
+    engine.rootContext()->setContextProperty("tasksModel", manager.getTasksModel());
+    engine.rootContext()->setContextProperty("workersModel", manager.getWorkersModel());
+    engine.rootContext()->setContextProperty("manager", &manager);
     engine.rootContext()->setContextProperty("flagDarkTheme", flagDarkTheme);
-    engine.rootContext()->setContextProperty("startValueOverallProgress", taskManager.getTasksModel()->getOverallProgress());
+    engine.rootContext()->setContextProperty("startValueOverallProgress", manager.getTasksModel()->getOverallProgress());
 
-    QObject::connect(taskManager.getTasksModel(), &TasksModel::progressChanged, &engine, [&](int overallProgress) {
+    QObject::connect(manager.getTasksModel(), &TasksModel::progressChanged, &engine, [&](int overallProgress) {
         engine.rootObjects().first()->setProperty("overallProgress", overallProgress);
     });
 
@@ -53,7 +51,7 @@ int main(int argc, char *argv[])
         settings.setValue("window/posY", rootObject->property("y"));
         settings.setValue("theme/darkMode", rootObject->property("isDarkTheme").toBool());
 
-        taskManager.stopWork();
+        manager.stopWork();
     });
 
     return app.exec();

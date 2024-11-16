@@ -21,7 +21,6 @@ public:
         StatusRole
     };
 
-    Q_INVOKABLE void addWorkers(short count);
     void updateWorker(int workerId);
     std::shared_ptr<Worker> getFreeWorker();
     std::shared_ptr<Worker> searchWorkerByTaskId(int taskId);
@@ -36,6 +35,9 @@ public:
     int getWaitingWorkers() const;
     int getBusyWorkers() const;
 
+    Q_INVOKABLE void addWorkers(short count);
+    Q_INVOKABLE void deleteWorker(int workerId);
+
 signals:
     void workersChanged();
 
@@ -45,7 +47,6 @@ protected:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 
 private:
-    QThread* threadWorkerModel;
     std::vector<std::shared_ptr<Worker>> workers;
 };
 

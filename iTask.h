@@ -12,11 +12,6 @@ enum TaskState
     Wait
 };
 
-enum TaskType
-{
-    NumericRandom
-};
-
 class ITask : public QObject
 {
     Q_OBJECT
@@ -31,9 +26,10 @@ public:
     virtual bool isCompleted() const = 0;
     virtual int getProgress() const = 0;
     int getId() const;
-    virtual std::string getWorkerId()           { return workerId == 0 ? "Ошибка" : std::to_string(workerId); }
+    virtual std::string getWorkerId();
     virtual QString getStatus() const = 0;
     virtual std::string getType() const = 0;
+    virtual void changeState(int state) = 0;
 
 signals:
     void progressUpdated(int taskId);

@@ -77,81 +77,36 @@ Window {
                             Layout.alignment: Qt.AlignLeft
                         }
                         Item { Layout.fillWidth: true } //spacer
-                        Button {
-                            text: "+1"
-                            onClicked: tasksModel.addNumericTask(1)
-                            Layout.preferredWidth: 40
-                            Layout.alignment: Qt.AlignRight
-                            style: ButtonStyle {
-                                    background: Rectangle {
-                                        implicitWidth: 100
-                                        implicitHeight: 25
-                                        border.width: 2
-                                        border.color: "#ffaaaa"
-                                        radius: 4
-                                        gradient: Gradient {
-                                            GradientStop { position: 0 ; color: control.pressed ? "#e8ccfb" : "#f8ccfb" }
-                                            GradientStop { position: 1 ; color: control.pressed ? "#dcc" : "#ccc" }
-                                        }
-                                    }
-                                }
+                        TextField {
+                            id: tasksInput
+                            Layout.minimumWidth: 100
+                            placeholderText: "Количество"
+                            validator: IntValidator { bottom: 1; top: 1000 }
+                            Layout.preferredWidth: 100
+                            inputMethodHints: Qt.ImhDigitsOnly
                         }
                         Button {
-                            text: "+10"
-                            onClicked: tasksModel.addNumericTask(10)
-                            Layout.preferredWidth: 40
-                            Layout.alignment: Qt.AlignRight
+                            text: "Добавить"
+                            onClicked: {
+                                if (!isNaN(parseInt(tasksInput.text))) {
+                                    tasksModel.addNumericTask(parseInt(tasksInput.text))
+                                    tasksInput.text = "";
+                                }
+                            }
+                            Layout.preferredWidth: 80
                             style: ButtonStyle {
-                                    background: Rectangle {
-                                        implicitWidth: 100
-                                        implicitHeight: 25
-                                        border.width: 2
-                                        border.color: "#ffaaaa"
-                                        radius: 4
-                                        gradient: Gradient {
-                                            GradientStop { position: 0 ; color: control.pressed ? "#e8ccfb" : "#f8ccfb" }
-                                            GradientStop { position: 1 ; color: control.pressed ? "#dcc" : "#ccc" }
-                                        }
+                                background: Rectangle {
+                                    implicitWidth: 100
+                                    implicitHeight: 25
+                                    border.width: 2
+                                    border.color: "#ffaaaa"
+                                    radius: 4
+                                    gradient: Gradient {
+                                        GradientStop { position: 0 ; color: control.pressed ? "#e8ccfb" : "#f8ccfb" }
+                                        GradientStop { position: 1 ; color: control.pressed ? "#dcc" : "#ccc" }
                                     }
                                 }
-                        }
-                        Button {
-                            text: "+50"
-                            onClicked: tasksModel.addNumericTask(50)
-                            Layout.preferredWidth: 40
-                            Layout.alignment: Qt.AlignRight
-                            style: ButtonStyle {
-                                    background: Rectangle {
-                                        implicitWidth: 100
-                                        implicitHeight: 25
-                                        border.width: 2
-                                        border.color: "#ffaaaa"
-                                        radius: 4
-                                        gradient: Gradient {
-                                            GradientStop { position: 0 ; color: control.pressed ? "#e8ccfb" : "#f8ccfb" }
-                                            GradientStop { position: 1 ; color: control.pressed ? "#dcc" : "#ccc" }
-                                        }
-                                    }
-                                }
-                        }
-                        Button {
-                            text: "+200"
-                            onClicked: tasksModel.addNumericTask(200)
-                            Layout.preferredWidth: 40
-                            Layout.alignment: Qt.AlignRight
-                            style: ButtonStyle {
-                                    background: Rectangle {
-                                        implicitWidth: 100
-                                        implicitHeight: 25
-                                        border.width: 2
-                                        border.color: "#ffaaaa"
-                                        radius: 4
-                                        gradient: Gradient {
-                                            GradientStop { position: 0 ; color: control.pressed ? "#e8ccfb" : "#f8ccfb" }
-                                            GradientStop { position: 1 ; color: control.pressed ? "#dcc" : "#ccc" }
-                                        }
-                                    }
-                                }
+                            }
                         }
                     }
 
@@ -187,8 +142,6 @@ Window {
                                             Behavior on value {
                                                   NumberAnimation {
                                                     duration: (progress >= itemTask.value) ? 1600 : 0
-                                                    //TODO если вернул сортировку, то этот вариант лучше восстановить
-                                                    //duration: (value >= itemTask.value) ? 1600 : 0
                                                   }
                                               }
                                             style: ProgressBarStyle {
@@ -245,88 +198,42 @@ Window {
                     RowLayout {
                         Layout.fillWidth: true
                         Layout.minimumWidth: 380
-                        // GradientRectangle { anchors.fill: parent}
                         Text {
-                            text: "Исполнители (рек. знач: " + taskManager.recommendedCountWorkers() + ")"
+                            text: "Исполнители (рек. знач: " + manager.recommendedCountWorkers() + ")"
                             color: textColor
                             Layout.alignment: Qt.AlignLeft
                         }
                         Item { Layout.fillWidth: true } //spacer
-                        Button {
-                            text: "+1"
-                            onClicked: workersModel.addWorkers(1)
-                            Layout.preferredWidth: 40
-                            Layout.alignment: Qt.AlignRight
-                            style: ButtonStyle {
-                                    background: Rectangle {
-                                        implicitWidth: 100
-                                        implicitHeight: 25
-                                        border.width: 2
-                                        border.color: "#ffaaaa"
-                                        radius: 4
-                                        gradient: Gradient {
-                                            GradientStop { position: 0 ; color: control.pressed ? "#e8ccfb" : "#f8ccfb" }
-                                            GradientStop { position: 1 ; color: control.pressed ? "#dcc" : "#ccc" }
-                                        }
-                                    }
-                                }
+                        TextField {
+                            id: workersInput
+                            Layout.minimumWidth: 100
+                            placeholderText: "Количество"
+                            validator: IntValidator { bottom: 1; top: 1000 }
+                            Layout.preferredWidth: 100
+                            inputMethodHints: Qt.ImhDigitsOnly
                         }
                         Button {
-                            text: "+10"
-                            onClicked: workersModel.addWorkers(10)
-                            Layout.preferredWidth: 40
-                            Layout.alignment: Qt.AlignRight
+                            text: "Добавить"
+                            onClicked: {
+                                if (!isNaN(parseInt(workersInput.text))) {
+                                    workersModel.addWorkers(parseInt(workersInput.text))
+                                    workersInput.text = "";
+                                }
+                            }
+                            Layout.preferredWidth: 80
                             style: ButtonStyle {
-                                    background: Rectangle {
-                                        implicitWidth: 100
-                                        implicitHeight: 25
-                                        border.width: 2
-                                        border.color: "#ffaaaa"
-                                        radius: 4
-                                        gradient: Gradient {
-                                            GradientStop { position: 0 ; color: control.pressed ? "#e8ccfb" : "#f8ccfb" }
-                                            GradientStop { position: 1 ; color: control.pressed ? "#dcc" : "#ccc" }
-                                        }
+                                background: Rectangle {
+                                    implicitWidth: 100
+                                    implicitHeight: 25
+                                    border.width: 2
+                                    border.color: "#ffaaaa"
+                                    radius: 4
+                                    gradient: Gradient {
+                                        GradientStop { position: 0 ; color: control.pressed ? "#e8ccfb" : "#f8ccfb" }
+                                        GradientStop { position: 1 ; color: control.pressed ? "#dcc" : "#ccc" }
                                     }
                                 }
-                        }
-                        Button {
-                            text: "+50"
-                            onClicked: workersModel.addWorkers(50)
-                            Layout.preferredWidth: 40
-                            Layout.alignment: Qt.AlignRight
-                            style: ButtonStyle {
-                                    background: Rectangle {
-                                        implicitWidth: 100
-                                        implicitHeight: 25
-                                        border.width: 2
-                                        border.color: "#ffaaaa"
-                                        radius: 4
-                                        gradient: Gradient {
-                                            GradientStop { position: 0 ; color: control.pressed ? "#e8ccfb" : "#f8ccfb" }
-                                            GradientStop { position: 1 ; color: control.pressed ? "#dcc" : "#ccc" }
-                                        }
-                                    }
-                                }
-                        }
-                        Button {
-                            text: "+200"
-                            onClicked: workersModel.addWorkers(200)
-                            Layout.preferredWidth: 40
-                            Layout.alignment: Qt.AlignRight
-                            style: ButtonStyle {
-                                    background: Rectangle {
-                                        implicitWidth: 100
-                                        implicitHeight: 25
-                                        border.width: 2
-                                        border.color: "#ffaaaa"
-                                        radius: 4
-                                        gradient: Gradient {
-                                            GradientStop { position: 0 ; color: control.pressed ? "#e8ccfb" : "#f8ccfb" }
-                                            GradientStop { position: 1 ; color: control.pressed ? "#dcc" : "#ccc" }
-                                        }
-                                    }
-                                }
+                            }
                         }
                     }
 
@@ -349,11 +256,31 @@ Window {
                                 }
                             RowLayout {
                                 Layout.fillWidth: true
-                                // rectangleGradient { width: parent.width}
                                 Text { text: "Исполнитель №" + workerId; color: textColor }
                                 Text { text: workerStatus; color: textColor }
+                                Item { Layout.fillWidth: true } //spacer
+                                Button {
+                                    text: "X"
+                                    onClicked: workersModel.deleteWorker(workerId)
+                                    Layout.preferredWidth: 25
+                                    Layout.alignment: Qt.AlignRight
+                                    style: ButtonStyle {
+                                            background: Rectangle {
+                                                implicitWidth: 100
+                                                border.width: 2
+                                                border.color: "#ffaaaa"
+                                                radius: 4
+                                                gradient: Gradient {
+                                                    GradientStop { position: 0 ; color: control.pressed ? "#e8ccfb" : "#f8ccfb" }
+                                                    GradientStop { position: 1 ; color: control.pressed ? "#e44545" : "#e44545" }
+                                                }
+                                            }
+                                        }
+                                }
                             }
-
+                            RowLayout {
+                                Text { text: ""; color: textColor } //выравнивание(в будущем сюда можно доп инфу сунуть
+                            }
                         }
                     }
                 }

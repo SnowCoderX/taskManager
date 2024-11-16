@@ -12,3 +12,8 @@ int ITask::getId() const
 
     return taskId;
 }
+
+std::string ITask::getWorkerId()
+{
+    return workerId == 0 ? "Ошибка" : std::to_string(workerId);
+}

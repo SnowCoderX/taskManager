@@ -3,9 +3,9 @@
 
 #include <memory>
 #include <vector>
-#include <mutex>
-#include <random>
 
+#include <QThread>
+#include <QTimer>
 #include <QAbstractListModel>
 
 #include "iTask.h"
@@ -16,6 +16,7 @@ class TasksModel : public QAbstractListModel
 
 public:
     explicit TasksModel(QObject *parent = nullptr);
+    ~TasksModel();
 
     enum TaskRoles
     {
@@ -43,6 +44,7 @@ public:
     Q_INVOKABLE int getOverallProgress() const;
 
 signals:
+    void requestTaskGeneration(short count);
     void progressChanged(int overallProgress);
     void tasksChanged();
 
@@ -52,12 +54,10 @@ protected:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 
 private:
-    QThread* threadTaskModel;
+    QTimer *progressUpdateTimer;
+    std::unique_ptr<QThread> threadTaskModel;
     std::vector<std::shared_ptr<ITask>> tasks;
-    mutable std::mutex mutexTasks;
-
-    template <typename T>
-    void addRandomNumericTask(std::mt19937 &gen);
+    void handleGeneratedTasks(const std::vector<std::shared_ptr<ITask> > &generatedTasks);
 };
 
 #endif // TASKSMODEL_H
