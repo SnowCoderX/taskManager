@@ -6,7 +6,7 @@ import QtQuick.Controls.Styles 1.4
 
 Window {
     visible: true
-    title: "Многопоточность в Qt"
+    title: "Менеджер задач"
     minimumWidth: 800
     minimumHeight: 600
 
