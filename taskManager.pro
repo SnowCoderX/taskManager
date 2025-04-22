@@ -10,7 +10,6 @@ SOURCES += \
     workersModel.cpp
 
 HEADERS += \
-    #iSerializableTask.h \
     taskGenerator.h \
     manager.h \
     iTask.h \
