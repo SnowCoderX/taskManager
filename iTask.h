@@ -12,6 +12,11 @@ enum TaskState
     Wait
 };
 
+enum TaskType
+{
+    NumericRandom
+};
+
 class ITask : public QObject
 {
     Q_OBJECT

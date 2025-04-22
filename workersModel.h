@@ -21,8 +21,10 @@ public:
         StatusRole
     };
 
+    void addWorker(std::unique_ptr<Worker> worker);
     void updateWorker(int workerId);
     std::shared_ptr<Worker> getFreeWorker();
+    std::vector<Worker*> getAllWorkers() const;
     std::shared_ptr<Worker> searchWorkerByTaskId(int taskId);
     int countWorkersByStatus(const QString& status) const;
     int countWorkersAll() const;

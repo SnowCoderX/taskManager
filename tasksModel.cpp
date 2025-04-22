@@ -92,6 +92,18 @@ std::shared_ptr<ITask> TasksModel::getFreeTask()
     return nullptr;
 }
 
+ITask* TasksModel::getTaskByTaskId (int taskId)
+{
+    for (const auto& task : tasks){
+        // std::lock_guard<std::mutex> lock(mutexTasks);
+        if (task != nullptr)
+            if (task->getId() == taskId)
+                return task.get();
+    }
+
+    return nullptr;
+}
+
 int TasksModel::getCountTasksByStatus(const QString &status) const
 {
     return std::count_if(tasks.begin(), tasks.end(), [&](const auto& task) {
@@ -113,7 +125,7 @@ void TasksModel::deleteTask(int taskId)
         return task->getId() == taskId; });
 
     if (it != tasks.end()) {
-        if (it->get()->getStatus() != "Ожидает" && it->get()->getStatus() != "Завершена")
+        if (it->get()->getStatus() != "Ожидает" && it->get()->getStatus() != "Завершается")
             return;
 
         int index = std::distance(tasks.begin(), it);
@@ -146,6 +158,16 @@ int TasksModel::getCountInProgressTasks()
 
     return getCountTasksByStatus("Выполняет исполнитель №");
 }
+
+std::vector<ITask*> TasksModel::getAllTasks() const
+{
+    std::vector<ITask*> allTasks;
+    for (const auto& task : tasks)
+        allTasks.push_back(task.get());
+
+    return allTasks;
+}
+
 
 //protected:
 

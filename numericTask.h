@@ -8,9 +8,10 @@
 #include <QVariant>
 
 #include "iTask.h"
+#include "iSerializableTask.h"
 
 template <typename T>
-class NumericTask : public ITask
+class NumericTask : public ITask, public ISerializableTask
 {
 public:
     NumericTask(T start, T end, T increment, QObject *parent = nullptr)
@@ -48,7 +49,7 @@ public:
 
     bool isCompleted() const override
     {
-        if (status == "Завершена")  return true;
+        if (status == "Завершается")  return true;
         else                        return false;
     }
 
@@ -76,17 +77,30 @@ public:
         return "unknown";
     }
 
+    QJsonObject serialize() const override
+    {
+        QJsonObject taskData;
+        // taskData["taskId"] = taskId;
+        taskData["type"] = QString::fromStdString(getType());
+        taskData["start"] = QVariant::fromValue(myProgress).toString();
+        taskData["end"] = QVariant::fromValue(myEnd).toString();
+        taskData["increment"] = QVariant::fromValue(myIncrement).toString();
+        // taskData["status"] = QString::fromStdString(status);
+        return taskData;
+    }
+
+private:
     void changeState(int state) override
     {
         switch (state) {
-        case TaskState::Complete:   status = "Завершена";                                                       break;
+        case TaskState::Complete:   status = "Завершается";                                                     break;
         case TaskState::Active:     status = "Выполняет исполнитель №" + QString::fromStdString(getWorkerId()); break;
         case TaskState::Wait:       status = "Ожидает";                                                         break;
         default:                    status = "Ошибка";                                                          break;
         }
         emit statusChanged();
     }
-private:
+
     void closeTask() override
     {
         changeState(TaskState::Complete);

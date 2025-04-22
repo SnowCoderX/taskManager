@@ -20,8 +20,10 @@ public:
     int getId() const;
     int getTaskId() const;
     void stop();
+    void stopTask();
 
 signals:
+    void taskFinished(int workerId);
     void changeStatus(int workerId);
 
 protected:

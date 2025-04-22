@@ -11,6 +11,7 @@ SOURCES += \
 
 HEADERS += \
     taskGenerator.h \
+    iSerializableTask.h \
     manager.h \
     iTask.h \
     numericTask.h \

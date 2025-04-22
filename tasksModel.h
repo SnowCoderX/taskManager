@@ -28,6 +28,7 @@ public:
 
     void addTask(std::shared_ptr<ITask> task);
     std::shared_ptr<ITask> getFreeTask();
+    ITask* getTaskByTaskId (int taskId);
     int getCountTasksByStatus(const QString& status) const;
 
     Q_PROPERTY(int totalTasks READ getCountTasksAll NOTIFY tasksChanged)
@@ -39,6 +40,7 @@ public:
     Q_INVOKABLE int getCountTasksAll() const;
     Q_INVOKABLE int getCountWaitingTasks();
     Q_INVOKABLE int getCountInProgressTasks();
+    std::vector<ITask*> getAllTasks() const;
 
     Q_INVOKABLE void updateTask(int taskId);
     Q_INVOKABLE int getOverallProgress() const;

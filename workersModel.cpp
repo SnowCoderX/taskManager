@@ -8,6 +8,22 @@ WorkersModel::WorkersModel(QObject* parent)
 
 }
 
+void WorkersModel::addWorker(std::unique_ptr<Worker> worker)
+{
+    connect(worker.get(), &Worker::taskFinished, this, [this](int workerId) {
+        updateWorker(workerId);
+    });
+
+    connect(worker.get(), &Worker::changeStatus, this, [this](int workerId) {
+        updateWorker(workerId);
+    });
+
+    // std::lock_guard<std::mutex> lock(mutexWorkers);
+    beginInsertRows(QModelIndex(), workers.size(), workers.size());
+    workers.push_back(std::move(worker));
+    emit workersChanged();
+    endInsertRows();
+}
 
 void WorkersModel::updateWorker(int workerId)
 {
@@ -28,6 +44,16 @@ std::shared_ptr<Worker> WorkersModel::getFreeWorker()
     return nullptr;
 }
 
+std::vector<Worker*> WorkersModel::getAllWorkers() const
+{
+    // std::lock_guard<std::mutex> lock(mutexWorkers);
+    std::vector<Worker*> allWorkers;
+    for (const auto& worker : workers)
+        allWorkers.push_back(worker.get());
+
+    return allWorkers;
+}
+
 std::shared_ptr<Worker> WorkersModel::searchWorkerByTaskId(int taskId)
 {
     for (const auto& worker : workers)
@@ -43,6 +69,12 @@ int WorkersModel::countWorkersByStatus(const QString &status) const
         return worker->getStatus().contains(status);
     });
 }
+
+int WorkersModel::countWorkersAll() const
+{
+    return workers.size();
+}
+
 
 void WorkersModel::stopAllWorkers()
 {
